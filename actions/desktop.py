@@ -137,7 +137,7 @@ Hard rules:
 - NO file write operations except explicitly requested
 - If task cannot be done safely with these tools, output exactly: UNSAFE
 
-Output ONLY the Python code. No explanation, no markdown, no backticks.
+Output ONLY the Python code. No explanation, no Анфисаdown, no backticks.
 
 Task: {task}"""
 

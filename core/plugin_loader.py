@@ -1,10 +1,11 @@
 """
-Plugin discovery, validation, collision detection, and dispatch.
+Обнаружение плагинов, валидация, детекция коллизий и диспетчеризация.
 
-Discovery runs once (АнфисаLive.__init__ calls discover_plugins()); the resulting
-PluginRegistry is cached for the process lifetime. Enable/disable state is re-read
-from config on every call to get_tool_declarations() / run() / list_for_ui(), so
-toggling a plugin does not require restarting the app or re-importing anything.
+Обнаружение выполняется один раз (АнфисаLive.__init__ вызывает discover_plugins());
+результирующий PluginRegistry кэшируется на время жизни процесса. Состояние
+включено/выключено перечитывается из конфига при каждом вызове
+get_tool_declarations() / run() / list_for_ui(), поэтому переключение плагина
+не требует перезапуска приложения или повторного импорта.
 """
 from __future__ import annotations
 
@@ -32,16 +33,16 @@ class PluginRecord:
     file: str = ""
     valid: bool = False
     error: str = ""
-    settings: Optional[dict] = None   # optional PLUGIN_SETTINGS schema (config fields)
+    settings: Optional[dict] = None   # необязательная схема PLUGIN_SETTINGS (поля конфига)
 
 
 class PluginRegistry:
     def __init__(self, plugins: dict[str, PluginRecord], logger: Callable[[str], None]):
-        self._plugins = plugins          # name -> PluginRecord, VALID entries only
-        self._all_records: list[PluginRecord] = []   # valid + invalid, for UI listing
+        self._plugins = plugins          # name -> PluginRecord, только ВАЛИДНЫЕ записи
+        self._all_records: list[PluginRecord] = []   # валидные + невалидные, для списка в UI
         self._logger = logger
 
-    # -- called by main.py at LiveConnectConfig build time --
+    # -- вызывается main.py при построении LiveConnectConfig --
     def get_tool_declarations(self) -> list[dict]:
         decls = []
         for name, rec in self._plugins.items():
@@ -56,21 +57,21 @@ class PluginRegistry:
     def has(self, name: str) -> bool:
         return name in self._plugins
 
-    # -- called by main.py from _execute_tool's else branch --
+    # -- вызывается main.py из ветки else _execute_tool --
     def run(self, name: str, parameters: dict, player=None, session_memory=None) -> str:
         rec = self._plugins.get(name)
         if rec is None or not rec.valid:
-            return f"Plugin '{name}' is not available."
+            return f"Плагин '{name}' недоступен."
         if not get_plugin_enabled(name):
-            return f"The '{name}' plugin is currently disabled."
+            return f"Плагин '{name}' в данный момент отключён."
         try:
-            return _call_run(rec.run, parameters, player, session_memory) or "Done."
+            return _call_run(rec.run, parameters, player, session_memory) or "Готово."
         except Exception as e:
             self._logger(f"Plugin '{name}' crashed during run(): {e}")
             traceback.print_exc()
-            return f"Sir, the '{name}' plugin failed: {e}"
+            return f"Сэр, плагин '{name}' упал: {e}"
 
-    # -- called by ui.py's settings tab to render per-plugin config forms --
+    # -- вызывается ui.py's settings tab для отрисовки форм конфига --
     def settings_schemas(self) -> list[dict]:
         """One entry per settings SECTION, for enabled plugins that declare a
         PLUGIN_SETTINGS schema. Sections are deduped by namespace so a suite of

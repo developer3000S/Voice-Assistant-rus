@@ -1,27 +1,28 @@
 """
-Action discovery, validation, and dispatch — the built-in twin of plugin_loader.
+Обнаружение, валидация и диспетчеризация действий — встроенный близнец plugin_loader.
 
-Every actions/*.py that exposes a module-level ``TOOL`` dict is auto-discovered
-here, exactly like a drop-in plugin, so main.py never has to hardcode a tool
-declaration or a dispatch branch for it. Adding a new bundled action is then the
-same one-file operation as writing a plugin: define ``TOOL`` and a handler.
+Каждый файл actions/*.py, который объявляет модулевой dict ``TOOL``,
+автоматически обнаруживается здесь — ровно как подключаемый плагин, — поэтому
+main.py не должен хардкодить ни декларацию инструмента, ни ветку его диспетчеризации.
+Добавить новое встроенное действие — та же операция из одного файла, что и
+написать плагин: объявить ``TOOL`` и обработчик.
 
-``TOOL`` shape (see actions/open_app.py for a live example):
+Форма ``TOOL`` (живой пример — actions/open_app.py):
 
     TOOL = {
-        "name":        "open_app",              # unique, ^[a-zA-Z_][a-zA-Z0-9_]{0,63}$
-        "description":  "...",                   # what Gemini reads to route the call
-        "parameters":  {"type": "OBJECT", ...}, # Gemini function-declaration schema
-        "handler":      open_app,                # the callable to run
+        "name":        "open_app",              # уникальный, ^[a-zA-Z_][a-zA-Z0-9_]{0,63}$
+        "description":  "...",                   # что читает Gemini, чтобы направить вызов
+        "parameters":  {"type": "OBJECT", ...}, # схема объявления функции для Gemini
+        "handler":      open_app,                # вызываемый объект, который запускается
     }
 
-The handler is invoked through signature introspection: it receives ``parameters``
-plus whichever of ``player`` / ``speak`` / ``response`` / ``session_memory`` it
-actually declares — so existing action signatures work unchanged.
+Обработчик вызывается через интроспекцию сигнатуры: он получает ``parameters``
+плюс те из ``player`` / ``speak`` / ``response`` / ``session_memory``, которые
+фактически объявлены, — поэтому существующие сигнатуры действий работают без изменений.
 
-Discovery runs once at startup; import errors, validation errors, and name
-collisions are logged and the offending file is skipped — they NEVER raise out
-of discover_actions() and never abort the scan of the remaining files.
+Обнаружение выполняется один раз при запуске; ошибки импорта, ошибки валидации и
+коллизии имён логируются, а проблемный файл пропускается — они НИКОГДА не
+выбрасываются наружу из discover_actions() и не прерывают обход остальных файлов.
 """
 from __future__ import annotations
 
@@ -56,7 +57,7 @@ class ActionRegistry:
         self._all_records: list[ActionRecord] = []
         self._logger = logger
 
-    # -- called by main.py at LiveConnectConfig build time --
+    # -- вызывается main.py при построении LiveConnectConfig --
     def get_tool_declarations(self) -> list[dict]:
         return [
             {"name": rec.name, "description": rec.description, "parameters": rec.parameters}
@@ -73,19 +74,19 @@ class ActionRegistry:
     def run(self, name: str, parameters: dict, ctx: dict | None = None) -> str:
         rec = self._actions.get(name)
         if rec is None or not rec.valid:
-            return f"Action '{name}' is not available."
+            return f"Действие '{name}' недоступно."
         try:
-            return _call_handler(rec.handler, parameters, ctx or {}) or "Done."
+            return _call_handler(rec.handler, parameters, ctx or {}) or "Готово."
         except Exception as e:
             self._logger(f"Action '{name}' crashed during run(): {e}")
             traceback.print_exc()
-            return f"Tool '{name}' failed: {e}"
+            return f"Инструмент '{name}' упал: {e}"
 
 
 def _call_handler(fn: Callable, parameters: dict, ctx: dict) -> str:
-    """Invoke the handler passing only the context kwargs it actually declares
-    (or all of them if it has **kwargs), so each action's existing signature
-    works unchanged."""
+    """Вызвать обработчик, передав только те kwargs контекста, которые он
+    действительно объявляет (либо все, если у него есть **kwargs), чтобы
+    существующая сигнатура каждого действия работала без изменений."""
     sig = inspect.signature(fn)
     has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
     kwargs = {}
@@ -96,31 +97,31 @@ def _call_handler(fn: Callable, parameters: dict, ctx: dict) -> str:
 
 
 def _validate(module, filename: str) -> ActionRecord:
-    """Returns an ActionRecord; .valid=False + .error set on any problem. Never raises."""
+    """Вернуть ActionRecord; .valid=False + .error установлен при любой проблеме. Никогда не бросает исключение."""
     tool = getattr(module, "TOOL", None)
     if not isinstance(tool, dict):
         return ActionRecord(name=Path(filename).stem, file=filename,
-                            error="No module-level TOOL dict (not a discoverable action).")
+                            error="В модуле нет dict уровня модуля TOOL (не открываемое действие).")
 
     name = tool.get("name")
     if not isinstance(name, str) or not _NAME_RE.match(name):
         return ActionRecord(name=str(name or Path(filename).stem), file=filename,
-                            error="TOOL['name'] missing or not a valid identifier.")
+                            error="TOOL['name'] отсутствует или не валидный идентификатор.")
 
     description = tool.get("description")
     if not isinstance(description, str) or not description.strip():
         return ActionRecord(name=name, file=filename,
-                            error="TOOL['description'] missing or empty.")
+                            error="TOOL['description'] отсутствует или пуст.")
 
     parameters = tool.get("parameters", _DEFAULT_PARAMS)
     if not isinstance(parameters, dict) or parameters.get("type") != "OBJECT":
         return ActionRecord(name=name, file=filename,
-                            error="TOOL['parameters'] must be a dict with \"type\": \"OBJECT\".")
+                            error="TOOL['parameters'] должен быть dict с \"type\": \"OBJECT\".")
 
     handler = tool.get("handler")
     if not callable(handler):
         return ActionRecord(name=name, file=filename,
-                            error="TOOL['handler'] missing or not callable.")
+                            error="TOOL['handler'] отсутствует или не callable.")
 
     return ActionRecord(name=name, description=description.strip(), parameters=parameters,
                         handler=handler, file=filename, valid=True, error="")
@@ -129,25 +130,24 @@ def _validate(module, filename: str) -> ActionRecord:
 def discover_actions(actions_dir: Path, reserved_names: set[str] | None = None,
                      logger: Callable[[str], None] = print) -> ActionRegistry:
     """
-    Scans actions_dir for *.py files (skips files starting with '_'). A file is
-    only treated as an action if it exposes a module-level TOOL dict; files
-    without one (shared helpers, capture-only modules) are silently ignored.
-    Import/validation errors and name collisions are logged and the file is
-    skipped — they NEVER raise out of this function.
+    Сканирует actions_dir по файлам *.py (пропускает файлы, начинающиеся с '_').
+    Файл рассматривается как действие, только если он объявляет модульный TOOL dict;
+    файлы без него (вспомогательные модули, capture-only) тихо игнорируются.
+    Ошибки импорта, валидации и коллизии имён логируются, файл пропускается —
+    они НИКОГДА не выбрасываются наружу из этой функции.
     """
     reserved = reserved_names or set()
     actions_dir.mkdir(parents=True, exist_ok=True)
     valid: dict[str, ActionRecord] = {}
     all_records: list[ActionRecord] = []
 
-    files = sorted(actions_dir.glob("*.py"), key=lambda p: p.name)  # deterministic order
+    files = sorted(actions_dir.glob("*.py"), key=lambda p: p.name)  # детерминируемый порядок
     for path in files:
         if path.name.startswith("_"):
             continue
         try:
             module_name = f"actions.{path.stem}"
-            # Reuse the already-imported module when present so handlers are the
-            # same objects the rest of the app holds.
+            # Повторно используем уже импортированный модуль, если он уже есть.
             module = sys.modules.get(module_name)
             if module is None:
                 spec = importlib.util.spec_from_file_location(module_name, path)
@@ -162,21 +162,21 @@ def discover_actions(actions_dir: Path, reserved_names: set[str] | None = None,
                     raise
 
             if getattr(module, "TOOL", None) is None:
-                continue   # not an action file — a helper/capture-only module
+                continue   # не файл действия — вспомогательный/capture-only модуль
 
             rec = _validate(module, path.name)
 
             if rec.valid and rec.name in reserved:
                 rec = ActionRecord(name=rec.name, file=path.name,
-                                   error=f"Name '{rec.name}' collides with a reserved core tool — rejected.")
+                                   error=f"Имя '{rec.name}' коллизирует с зарезервированным core-инструментом — отклонено.")
             elif rec.valid and rec.name in valid:
                 other = valid[rec.name].file
                 rec = ActionRecord(name=rec.name, file=path.name,
-                                   error=f"Name '{rec.name}' already used by action '{other}' — rejected.")
+                                   error=f"Имя '{rec.name}' уже используется действием '{other}' — отклонено.")
 
         except Exception as e:
             rec = ActionRecord(name=path.stem, file=path.name,
-                               error=f"Failed to load: {e}")
+                               error=f"Не удалось загрузить: {e}")
             traceback.print_exc()
 
         all_records.append(rec)

@@ -167,7 +167,7 @@ def _write(description: str, language: str, output_path: str, player=None) -> tu
 Write clean, working, well-commented {lang} code for the description below.
 
 Rules:
-- Output ONLY the code. No explanation, no markdown, no backticks.
+- Output ONLY the code. No explanation, no Анфисаdown, no backticks.
 - Add helpful inline comments.
 - Handle errors and edge cases properly.
 - Use modern best practices.
@@ -187,7 +187,7 @@ def _fix_code(code: str, error_output: str, description: str) -> str:
     model  = _get_gemini()
     prompt = f"""You are an expert debugger.
 The code below failed with the following error. Fix it.
-Return ONLY the corrected code — no explanation, no markdown, no backticks.
+Return ONLY the corrected code — no explanation, no Анфисаdown, no backticks.
 
 Original goal: {description}
 
@@ -321,7 +321,7 @@ def _edit_action(file_path, instruction, player) -> str:
     model  = _get_gemini()
     prompt = f"""You are an expert code editor.
 Apply the following change to the code below.
-Return ONLY the complete updated code — no explanation, no markdown, no backticks.
+Return ONLY the complete updated code — no explanation, no Анфисаdown, no backticks.
 
 Change: {instruction}
 
@@ -402,7 +402,7 @@ Optimize the following code for:
 3. Best practices — modern {lang} patterns, error handling, type hints if applicable
 4. Remove dead code, redundant comments, and unnecessary complexity
 
-Return ONLY the optimized code — no explanation, no markdown, no backticks.
+Return ONLY the optimized code — no explanation, no Анфисаdown, no backticks.
 
 Original code:
 {code[:6000]}

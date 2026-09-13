@@ -109,7 +109,7 @@ def _plan_project(description: str, language: str) -> dict:
 Language: {language}
 Description: {description}
 
-Return ONLY valid JSON — no markdown, no explanation:
+Return ONLY valid JSON — no Анфисаdown, no explanation:
 {{
   "project_name": "snake_case_name",
   "entry_point": "main.py",
@@ -209,7 +209,7 @@ Purpose of this file: {file_desc}
 {lang_rules}
 
 General rules:
-- Output ONLY raw code. Absolutely no explanation, no markdown, no triple backticks.
+- Output ONLY raw code. Absolutely no explanation, no Анфисаdown, no triple backticks.
 - Write COMPLETE, RUNNABLE code — no placeholders, no "# TODO", no "pass" stubs.
 - Every import must either be from the standard library, listed dependencies, or the project files shown above.
 - Match import paths EXACTLY to the file paths in the project structure (e.g. if file is "utils/helpers.py", import as "from utils.helpers import ...").
@@ -408,7 +408,7 @@ Current (broken) code:
 {current_code}
 
 Rules:
-- Output ONLY the complete fixed code. No explanation, no markdown, no backticks.
+- Output ONLY the complete fixed code. No explanation, no Анфисаdown, no backticks.
 - Fix ALL errors visible in the error output.
 - Keep all existing correct logic — do not remove working features.
 - Ensure import paths match the actual project file structure exactly.

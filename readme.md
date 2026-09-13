@@ -1,294 +1,293 @@
-# ⚙️ Voice Assistant
-### The Ultimate Cross-Platform Personal AI Assistant — By FatihMakes
+# ⚙️ Анфиса — голосовой ассистент
+### Универсальный личный AI-ассистент — создан FatihMakes
 
-> 📺 **[Watch the full setup video on YouTube](https://www.youtube.com/@FatihMakes)**
+> 📺 **[Посмотреть полное видео настройки на YouTube](https://www.youtube.com/@FatihMakes)**
 
-A real-time voice AI that can hear, see, understand, and control your computer — on any OS. Supports Windows, macOS, and Linux. Built on the Gemini Live API for native audio streaming, delivering zero subscriptions and total digital autonomy.
-
----
-
-## ✨ Overview
-
-**Voice Assistant is the hands-free & scalable release.** Say **"Привет Анфиса"** and it wakes; stay quiet and it slips back to sleep on its own — while asleep, your microphone never leaves the machine, so an off-hand *"I'll be right there"* to someone in the room no longer sets it off. Under the hood it now runs on the faster **Gemini 3.1 Flash Live** engine, and the moment you ask for something that takes a beat — analysing a file, searching the web — it answers instantly *("On it — going through that now…")* so you never wonder whether it heard you.
-
-It's also built to grow: every skill — bundled or drop-in — now **describes itself in its own file**, so adding a tool is a one-file operation and the core stays lean.
-
-It's not just an assistant — it's an extension of your digital life.
+Голосовой ИИ в реальном времени, который слышит, видит, понимает и управляет вашим компьютером — на любой ОС. Работает на Windows, macOS и Linux. Построен на Gemini Live API для нативного аудиопотока — без подписок и с полной цифровой автономией.
 
 ---
 
-## 🚀 Capabilities
+## ✨ Обзор
 
-### Core Features
-| Feature | Description |
+**«Анфиса» — релиз для работы без рук и с возможностью масштабирования.** Произнесите **«Привет Анфиса»** — и она проснётся; замолчите — и она сама вернётся в спящий режим. Пока «спит», ваш микрофон никуда не уходит, поэтому случайное *«Я сейчас буду рядом»*, сказанное кому-то в комнате, больше не будит её. Под капотом теперь работает более быстрый движок **Gemini 3.1 Flash Live**, а на запрос, требующий времени (анализ файла, поиск в вебе), она отвечает мгновенно — *«Занимаюсь — сейчас пройдусь по нему…»* — чтобы вы никогда не гадали, услышала ли она вас.
+
+Проект также сделан для роста: каждый навык — встроенный или подключаемый — **описывает себя в собственном файле**, поэтому добавление инструмента — операция с одним файлом, а ядро остаётся лёгким.
+
+Это не просто ассистент — это продолжение вашей цифровой жизни.
+
+---
+
+## 🚀 Возможности
+
+### Основные функции
+| Функция | Описание |
 |---|---|
-| 🎙️ Wake Word | Local **"Привет Анфиса"** detection — sleeps until called, auto-sleeps after 2 min of silence, and never streams audio while asleep. Opt-in, one-click download, toggle & manual sleep/wake from the UI |
-| ⚡ Instant Acknowledgment | Speaks a short, context-aware reply in **your language** the instant a longer task starts — no more silent waiting |
-| 🚀 Faster Live Engine | Runs on **Gemini 3.1 Flash Live** — roughly 2× faster time-to-first-word than the previous model |
-| 🧩 Self-Describing Skills | Actions and plugins share one shape (`TOOL` / `PLUGIN` dict + `run()`), auto-discovered at launch — adding or moving a skill is a single file, no core edits |
-| 🧠 Recallable Memory | No size limit and nothing silently forgotten — the prompt carries what fits, the rest is looked up on demand from a local search |
-| 👁️ Memory Panel | See every fact Анфиса has stored about you, when it learned it, and delete any of it in one click |
-| ↩️ Undo | Take back what the assistant did — files it moved, renamed, created or wrote, and settings it changed |
-| ⚠️ Real Confirmation | Shutdown, restart and WiFi wait for a button **you** press — the model cannot confirm its own irreversible actions |
-| 🎧 Audio Device Picker | Choose the microphone and speakers by name, filtered to the short list your OS shows — and measured, so every entry actually works |
-| 🔗 Session Continuity | A dropped connection, a voice change or a device change no longer wipes the conversation |
-| 🧩 Plugin System | Drop a single `.py` file into `plugins/` — Анфиса learns a new skill on next launch |
-| 🎙️ Real-time Voice | Ultra-low latency conversation in any language via Gemini Live API |
-| 🎨 Live Theming | Recolour the entire HUD from a hue wheel or hex — applied instantly across every panel |
-| 〰️ Reactive HUD | Waveform and reactor core pulse to real audio — your mic while listening, Анфиса while speaking |
-| 🎙️ Voice Picker | Choose from 5 native Gemini voices and switch live from the UI — no restart |
-| ♾️ Unlimited Sessions | Sliding-window context compression — one conversation can last for hours |
-| 🖥️ System Control | Launch apps, adjust volume/brightness, WiFi, shortcuts, power — all by voice |
-| 🧩 Autonomous Tasks | High-level planning for complex multi-step goals via agent mode |
-| 👁️ Visual Awareness | Real-time screen capture and webcam vision piped into your main Gemini session |
-| 🧠 Persistent Memory | Deeply remembers projects, preferences, and personal context across sessions |
-| ⌨️ Hybrid Input | Seamlessly switch between keyboard typing and voice commands |
-| 🌅 Morning Briefing | On first boot: greets you, reads the time, recaps yesterday, and fetches live news |
-| 🔔 Proactive 2.0 | Time-aware, context-aware check-ins — knows the time of day, your projects, and what you've been discussing |
-| 🗓️ Session Memory | Summarises each conversation and mentions it naturally next morning — consumed after use, never repeats |
-| 👁️‍🗨️ Background Monitoring | User-configured topic watching — checks for new headlines once a day and alerts naturally |
-| 📊 Hardware Monitoring | Continuous CPU, RAM, GPU and temperature telemetry with localized voice alerts |
-| 🌤️ Weather Report | Live weather data for your city, personalized from memory |
-| 🗺️ Dynamic Content Panel | Scrollable display layer beneath the HUD that renders web results, news, and search data |
-| 🔍 Multi-Mode Web Search | `news` / `research` / `price` / `compare` / `search` — Gemini Grounded first, DDG fallback |
-| ⏰ Smart Reminders | OS-native scheduled notifications (Windows Task Scheduler / macOS LaunchAgent / Linux systemd) |
-| ✈️ Flight Finder | Live flight price and availability lookup |
-| 🎮 Game Updater | Checks and triggers game updates on Steam and Epic Games on demand |
-| 📂 File Processor | Read, summarize, and answer questions about local files |
-| 💻 Code Helper | Inline code review, debugging, and generation |
-| 🌐 Browser Control | Open URLs, navigate tabs, and interact with the browser by voice |
-| 📨 Send Message | Compose and send messages through WhatsApp, Telegram, and more |
-| 🎬 YouTube Control | Search, play, and control YouTube playback by voice |
-| 🖱️ Desktop Control | Taskbar, window management, and desktop-level operations |
-| 🧑‍💻 Silent Language Memory | Detects spoken language on first use — all future sessions adapt automatically |
-| 📱 Remote Dashboard | Control the assistant from your phone via QR code pairing |
-| ⚡ Auto-Start on Boot | Registers with the OS startup system (registry / LaunchAgent / .desktop) |
-| 📋 Clipboard Intelligence | Copy any text → floating panel with Translate / Summarise / Explain / Fix |
-| 🪪 Assistant Customization | Change the assistant name, your name, voice, and colour from the UI — takes effect immediately |
+| 🎙️ Слово пробуждения | Локальное обнаружение **«Привет Анфиса»** — спит, пока не позовут; сама засыпает через 2 мин тишины; пока спит — аудио в облако не уходит. Опционально, загрузка одним кликом, переключение и ручной сон/пробуждение из интерфейса |
+| ⚡ Мгновенное признание | Произносит короткий, адресный ответ **на вашем языке** в момент, когда длинная задача стартует — больше молчащих пауз |
+| 🚀 Более быстрый движок | Работает на **Gemini 3.1 Flash Live** — примерно в 2 раза быстрее время до первого слова, чем предыдущая модель |
+| 🧩 Самоописываемые навыки | Действия и плагины имеют одну форму (словарь `TOOL` / `PLUGIN` + `run()`), открываются при запуске — добавить или переместить навык — один файл, без правки ядра |
+| 🧠 Вспоминаемая память | Без ограничений по размеру и без тихого забывания — системный промпт несёт то, что влезает, остальное ищется по требованию из локальной базы |
+| 👁️ Панель памяти | Посмотреть любую зафиксированную Анфиса о вас вещь, когда она её узнала, и удалить любую одним кликом |
+| ↩️ Отмена | Забрать обратно то, что ассистент сделал — перемещённые, переименованные, созданные или записанные файлы и изменённые настройки |
+| ⚠️ Реальное подтверждение | Выключение, перезапуск и Wi-Fi ждут нажатия **кнопки, которую нажмёте вы** — модель не может подтвердить необратимые действия сама |
+| 🎧 Выбор аудиоустройства | Выберите микрофон и динамики по имени, отфильтрованные до короткого списка вашей ОС — и измеренные, чтобы каждый пункт реально работал |
+| 🔗 Непрерывность сессии | Обрыв соединения, смена голоса или устройства больше не стирают беседу |
+| 🧩 Система плагинов | Скопируйте один `.py` файл в `plugins/` — Анфиса освоит новый навык при следующем запуске |
+| 🎙️ Голос в реальном времени | Ультранизколатентный разговор на любом языке через Gemini Live API |
+| 🎨 Живая тема | Перекрасьте весь интерфейс с помощью круга оттенков или hex-кода — применяется мгновенно на каждой панели |
+| 〰️ Реактивный интерфейс | Гистограмма и ядро пульсируют под реальный звук — ваш микрофон в режиме прослушивания, Анфиса — в режиме речи |
+| 🎙️ Выбор голоса | Выберите из 5 встроенных голосов Gemini и переключайтесь в реальном времени из интерфейса — без перезапуска |
+| ♾️ Неограниченные сессии | Сжатие контекста скользящим окном — один разговор может длиться часами |
+| 🖥️ Управление системой | Запускать приложения, регулировать громкость/яркость, Wi-Fi, горячие клавиши, питание — всё голосом |
+| 🧩 Автономные задачи | Планирование высокого уровня для сложных многоступенчатых целей в режиме агента |
+| 👁️ Зрительное восприятие | Захват экрана и видео с веб-камеры в реальном времени, подаваемые в вашу основную Gemini-сессию |
+| 🧠 Постоянная память | Глубоко помнит проекты, предпочтения и личный контекст между сессиями |
+| ⌨️ Гибридный ввод | Плавно переключайтесь между набором с клавиатуры и голосовыми командами |
+| 🌅 Утренний брифинг | При первом запуске: приветствие, чтение времени, вчерашние события и свежие новости |
+| 🔔 Проактивность 2.0 | Проверки с учётом времени и контекста — знает время суток, ваши проекты и обсуждённые темы |
+| 🗓️ Память сессий | Резюмирует каждый разговор и на следующий день естественно о нём упоминает — используется и забывается |
+| 👁️‍🗨️ Фоновое наблюдение | Наблюдение за заданными темами — ежедневная проверка DDG и естественные уведомления |
+| 📊 Мониторинг оборудования | Непрерывная телеметрия CPU, RAM, GPU и температуры с локализованными голосовыми оповещениями |
+| 🌤️ Погода | Прямая погода для вашего города, персонализированная из памяти |
+| 🗺️ Динамическая панель контента | Прокручиваемый слой под интерфейсом, показывающий результаты поиска, новости и прочие данные |
+| 🔍 Многорежимный поиск | `news` / `research` / `price` / `compare` / `search` — Gemini Grounded в первую очередь, DDG на замену |
+| ⏰ Умные напоминания | ОС-нативные планируемые уведомления (Диспетчер задач Windows / LaunchAgent macOS / systemd Linux) |
+| ✈️ Поиск рейсов | Поиск цен и наличия билетов в реальном времени |
+| 🎮 Обновление игр | Проверка и запуск обновлений Steam и Epic Games по запросу |
+| 📂 Обработчик файлов | Чтение, резюмирование и вопросы по локальным файлам |
+| 💻 Помощник с кодом | Выездной код-ревью, отладка и генерация |
+| 🌐 Управление браузером | Открывать URL, переключать вкладки и взаимодействовать с браузером голосом |
+| 📨 Отправить сообщение | Составлять и отправлять сообщения через WhatsApp, Telegram и др. |
+| 🎬 Управление YouTube | Поиск, воспроизведение и управление воспроизведением YouTube голосом |
+| 🖱️ Управление рабочим столом | Панель задач, управление окнами и операции рабочего стола |
+| 🧑‍💻 Молчаливая языковая память | Определяет язык речи при первом использовании — все последующие сессии адаптируются автоматически |
+| 📱 Удалённый дашборд | Управляйте ассистентом с телефона через сопряжение QR-кодом |
+| ⚡ Автозапуск | Регистрируется в автозагрузке ОС (реестр / LaunchAgent / .desktop) |
+| 📋 Умный буфер обмена | Скопируйте текст → плавающая панель с переводом / резюмированием / объяснением / исправлением |
+| 🪪 Настройка ассистента | Измените имя ассистента, ваше имя, голос и цвет из интерфейса — эффект мгновенный |
 
 ---
 
-## 🆕 What's New in Voice Assistant
+## 🆕 Что нового в голосовом ассистенте
 
-Voice Assistant is about making Анфиса **hands-free, faster, and easy to extend** — all universal: no hardcoded language, no bundled asset files, works the same on Windows, macOS and Linux.
+«Анфиса» создана для работы **без рук, быстрее и с лёгким расширением** — всё универсально: никаких жёстко зашитых языков, никаких встроенных файлов ресурсов, одинаково на Windows, macOS и Linux.
 
-### 🎙️ Wake Word — "Привет Анфиса"
-Анфиса can now sit quietly until you call it. Turn on **⚙ → WAKE WORD** (a one-click, opt-in download of a tiny local model) and it goes to sleep: the microphone is processed **only on your machine** by a local detector, and nothing is sent to the cloud until it hears **"Привет Анфиса."** Once awake it listens normally, then **auto-sleeps after 2 minutes** of silence. You can also **sleep/wake it by clicking** in the settings. Because it's a *local* gate, background chatter — *"I'm coming!"* to someone at home — never wakes it. It costs **zero** when off (the model isn't even loaded), and the detection runs in its own thread, so nothing else in the app slows down.
+### 🎙️ Слово пробуждения — «Привет Анфиса»
+Анфиса теперь может молчать, пока вы её не позовёте. Включите **⚙ → СЛОВО ПРОБУЖДЕНИЯ** (однокликовая загрузка крошечной локальной модели) — она засыпает: микрофон обрабатывается **только на вашем устройстве** локальным детектором, и в облако ничего не уходит, пока не прозвучит **«Привет Анфиса»**. Проснувшись, она слушает как обычно, а потом **сама засыпает через 2 минуты** тишины. Можно также **усыпить/разбудить кликом** в настройках. Потому что это *локальный* пропуск — фоновые разговоры (*«Я сейчас буду рядом»* кому-то дома) её не будят. В положенном состоянии она ничего не стоит (модель даже не загружена), а детектор работает в своей нити, так что всё остальное в приложении не тормозит.
 
-### ⚡ Instant Acknowledgment
-No more silent gaps. When you ask for something that takes a moment — reading an uploaded file, a web/research search, building code — Анфиса **immediately** says one short, natural sentence *in your language* (*"Right away — going through that file now."*) and *then* runs the tool. Instant actions (opening an app, volume) stay snappy with no chatter.
+### ⚡ Мгновенное признание
+Больше молчащих пауз. Когда вы просите что-то, что займёт время — чтение загруженного файла, поиск, сборка кода — Анфиса **мгновенно** говорит одно короткое, естественное предложение *на вашем языке* (*«Занимаюсь — сейчас пройдусь по файлу.»*) и *только потом* запускает инструмент. Мгновенные действия (открытие приложения, громкость) остаются быстрыми без лишних слов.
 
-### 🚀 Faster Live Engine — Gemini 3.1 Flash Live
-The live session moved to **`gemini-3.1-flash-live-preview`**, cutting the time-to-first-word roughly in half while keeping tools, all five voices, transcription, session resumption and sliding-window compression intact.
+### 🚀 Более быстрый движок — Gemini 3.1 Flash Live
+Живая сессия перешла на **`gemini-3.1-flash-live-preview`**, сократив время до первого слова примерно вдвое, сохранив инструменты, все пять голосов, транскрипцию, возобновление сессии и сжатие контекста скользящим окном.
 
-### 🧩 Self-Describing Skills — a Scalable Core
-Every bundled **action** now carries its own `TOOL` declaration in its own file (exactly like a drop-in **plugin's** `PLUGIN` dict), and the core auto-discovers them at launch. `main.py` no longer holds a giant list of tool definitions and dispatch branches — it shrank by hundreds of lines. Adding a new built-in skill, or promoting an `actions/*.py` file into a shareable plugin, is now just… moving a file.
+### 🧩 Самоописываемые навыки — масштабируемое ядро
+Каждое встроенное **действие** теперь несёт своё объявление `TOOL` в отдельном файле (точно как у подключаемого **плагина** его `PLUGIN`-словарь), а ядро автоматически открывает их при запуске. `main.py` больше не хранит гигантский список описаний инструментов и ветвей диспетчеризации — он сократился на сотни строк. Добавить новый встроенный навык или перевести файл `actions/*.py` в распространяемый плагин — теперь это просто… перемещение файла.
 
-> Built on the Mark LI/LII foundation: the **🧩 Plugin System**, **♾️ Unlimited Sessions**, **🎨 Live Theming**, **〰️ Reactive HUD** and **🎙️ Voice Picker** are all still here.
+> Построено на фундаменте: **🧩 система плагинов**, **♾️ неограниченные сессии**, **🎨 живая тема**, **〰️ реактивный интерфейс** и **🎙️ выбор голоса** — всё на месте.
 
 ---
 
-## 🔄 The Foundation Update — in every Mark from LII
+## 🔄 Обновление фундамента
 
-These four landed across **Mark LII, LIII, LIV and LV at the same time**, after each of those releases had already shipped. They are not what any one of those versions originally introduced; they are the floor all of them now stand on, so moving up a Mark never costs you something the one below it had.
+Новых зависимостей. Никаких встроенных файлов ресурсов. Никаких жёстко зашитых языков и ничего, что предполагает одну операционную систему.
 
-No new dependencies. No bundled asset files. No hardcoded language, and nothing that assumes one operating system.
+### 🧠 Память, которая действительно помнит
 
-### 🧠 A memory that actually remembers
+Хранилище было ограничено **2 200 символами — вся память целиком, не на запись** — потому что всё оно вставлялось в системный промпт при каждом подключении, и рост памяти рос каждый запрос. Когда оно заполнялось, самые старые записи удалялись, и одна строчка выводилась в консоль, которую никто не читает. Ассистент, рекламирующий «помнить проекты, предпочтения и личный контекст», на деле был двухстраничной запиской, которая тихо забывала имя вашей сестры через несколько недель.
 
-The store was capped at **2,200 characters — the whole memory, not per entry** — because all of it was pasted into the system prompt on every connect, so growing the memory grew every request. When it filled, the oldest entries were deleted and one line was printed to a console nobody reads. An assistant advertised as remembering "projects, preferences and personal context" was in practice a two-page notepad that quietly forgot your sister's name after a few weeks.
+Хранение и бюджет промпта теперь — отдельные проблемы:
 
-Storage and prompt budget are now separate problems:
+* **Ничего не удаляется.** Ограничение — это предохранитель, к которому нормальное использование никогда не приходит, и если оно когда-нибудь будет достигнуто, об этом скажется в журнале действий, а не в stdout.
+* **Промпт несёт ядро, а не выгрузку.** Идентичность целиком, затем самые свежие обновлённые факты, по бюджету — измерено **971 символом в памяти, хранящей 62 зафиксированные вещи**. Это *меньше*, чем старый лимит всей базы, поэтому сессии подключаются с меньшим числом токенов, чем раньше.
+* **Остальное запрашивается по требованию.** Инструмент `recall_memory` ищет по всей базе локально — никакой сети, никакой второй модели, далеко меньше миллисекунды.
 
-* **Nothing is deleted.** The cap is a runaway guard normal use never approaches, and if it is ever hit it says so in the activity log instead of on stdout.
-* **The prompt carries a core, not a dump.** Identity in full, then the most recently updated facts, budgeted — measured at **971 characters on a memory holding 62 stored facts.** That is *smaller* than the old whole-store cap, so sessions now connect with fewer tokens than before.
-* **The rest is fetched on demand.** A `recall_memory` tool searches the full store locally — no network, no second model, well under a millisecond.
+Ловушка, которую легко упустить: **модель не может найти вещь, если не знает, что она существует.** Поэтому промпт также несёт **индекс ключей**, для которых не хватило места. Без него «кто Айше?» получит «Я не знаю», пока `ayse_sister` лежит на диске непрочитанным. Этот индекс чередует категории, а не сортирует по свежести — отсортированный по freshness ядро с сорока предпочтениями вытолкнуло единственную запись, для которой индекс был создан, за пределы.
 
-The part that is easy to get wrong: **a model cannot look something up if it doesn't know the thing exists.** So the prompt also carries an **index of the keys** it had no room for. Without it, "who is Ayşe?" gets "I don't know" while `ayse_sister` sits on disk unread. That index interleaves categories rather than sorting by recency — sorted like the core, a memory with forty preferences pushed the one entry the index existed for off the end.
+⚙ → **🧠 ПАМЯТЬ** показывает каждую сохранённую вещь, когда она была узнана и ✕ для забвения. Всё остаётся в `memory/long_term.json` на вашем устройстве.
 
-⚙ → **🧠 MEMORY** shows every stored fact, when it was learned, and a ✕ to forget it. Everything stays in `memory/long_term.json` on your machine.
+### ↩️ Отмена — она умеет взять назад то, что сделала
 
-### ↩️ Undo — it can take back what it did
+Анфиса перемещает файлы, переименовывает их, записывает в них и меняет ваши настройки. У всего этого раньше не было способа вернуть; если она неправильно услышала, единственным лекарством было исправить вручную.
 
-Анфиса moves files, renames them, writes to them and changes your settings. None of that had a way back; if it misheard you, the only remedy was to fix it by hand.
-
-Say **"undo"** — in any language — and it reverses its own last action:
+Скажите **«отмена»** — на любом языке — и она развернёт своё последнее действие:
 
 | | |
 |---|---|
-| **Files** | move · rename · create · copy · write · delete · organize desktop |
-| **Settings** | volume · brightness · dark mode |
+| **Файлы** | перемещение · переименование · создание · копирование · запись · удаление · организация рабочего стола |
+| **Настройки** | громкость · яркость · тёмная тема |
 
-Three things it deliberately does *not* do:
+Три вещи, которые она намеренно НЕ делает:
 
-* **It does not guess.** Settings undo reads the current value *before* changing it. Where a platform won't report that value, nothing is registered — an undo that restores a guess is worse than no undo.
-* **It does not hoard.** Undoing a write means keeping the old contents in memory, so files over 1 MB are excluded and it says so rather than holding a 200 MB log for the session.
-* **It does not delete your files to undo a copy.** The reverse of a copy is removing the copy; the reverse of "create a folder" is removing it *only while it's still empty*.
+* **Она не гадает.** Отмена настроек читает текущее значение *до* его изменения. Где платформа не может сообщить это значение, ничего не регистрируется — отмена, восстанавливающая догадку, хуже, чем никакой отмена.
+* **Она не копит.** Отмена записи означает сохранение прежнего содержимого в памяти, поэтому файлы свыше 1 МБ исключаются, и об этом сообщается, вместо того чтобы держать лог сессии в 200 МБ.
+* **Она не удаляет ваши файлы, чтобы отменить копию.** Обратное копированию — удаление копии; обратное «создай папку» — удаление папки *только пока она пустая*.
 
-`organize_desktop` gets special treatment — one command that moves dozens of files, which made it the least reversible thing the assistant could do. It journals every move and puts all of them back in one go, cleaning up the folders it created if they're still empty.
+`organize_desktop` получает особое обращение — одна команда, перемещающая десятки файлов, что делало её наименее отменяемым действием, которое ассистент мог совершить. Она фиксирует каждое перемещение и возвращает все сразу, очищая созданные папки, если они всё ещё пусты.
 
-**Undo costs nothing at runtime.** It appends a closure to a list; nothing in it runs unless you ask.
+**Отмена ничем не обходится во время работы.** Она добавляет замыкание в список; в нём ничего не запускается, пока вы не попросите.
 
-### ⚠️ A confirmation the model can't forge
+### ⚠️ Подтверждение, которое модель не подделает
 
-The old gate read like this:
+Старая защита выглядела так:
 
 ```python
 if action in _DANGEROUS_ACTIONS:            # {"restart", "shutdown"}
     confirmed = str(params.get("confirmed", "")).lower()
 ```
 
-`confirmed` is a **tool parameter, which means the model fills it in.** Nothing stopped it sending `confirmed=yes` on the first call and nothing checked that a human was ever involved. It was a convention, not a gate. And its coverage was two actions — so `toggle_wifi`, which cuts the assistant's own connection to the Live API and therefore *cannot be asked to undo itself*, went through with no gate at all.
+`confirmed` — это **параметр инструмента, то есть модель его заполняет**. Ничто не мешало ей отправить `confirmed=yes` с первого вызова, и ничто не проверяло, причастен ли к этому человек. Это была конвенция, а не заслон. И его покрытие было двумя действиями — так `toggle_wifi`, который разрывает собственное соединение ассистента с Live API и поэтому *его нельзя попросить отменить*, прошёл вообще без защиты.
 
-The token is now issued by the interface. Shutdown, restart and WiFi put a banner on the HUD and **return immediately**; the action runs only if you press CONFIRM. Nothing blocks — Анфиса keeps talking while the banner is up — so this is **cheaper than the old gate**, which burned two tool round trips on every power command.
+Токен теперь выдаёт интерфейс. Выключение, перезапуск и Wi-Fi показывают баннер на HUD и **возвращаются немедленно**; действие запускается только после вашего нажатия CONFIRM. Ничего не блокируется — Анфиса продолжает говорить, пока баннер на экране, — так что это **дешевле старой защиты**, которая сжигала два круга инструментов на каждой команду питания.
 
-> The split between the two mechanisms is about reversibility, not about how alarming a word sounds. Anything undoable is done at once; only the genuinely irreversible asks. An assistant that checks with you before turning the volume down is one you stop talking to.
+> Разделение двух механизмов — это про обратимость, а не про пугаемость слова. Всё, что можно отменить, делается сразу; только по-настоящему необратимое просит подтверждения. Ассистент, который спрашивает разрешения перед уменьшением громкости, — тот, перестанешь ли ты с ним разговаривать.
 
-### 🎧 It finally asks which microphone
+### 🎧 Наконец-то спрашивает, какой микрофон
 
-Both audio streams opened with no device argument at all, so they always took whatever the OS called "default" — and on Windows that *moves on its own* the moment you plug a headset in. "Анфиса can't hear me" almost always meant "Анфиса is listening to the webcam".
+Оба аудиопотока открывались вообще без аргумента устройства, так что всегда брали то, что ОС называла «по умолчанию», — а на Windows это *само переключается* стоит воткнуть гарнитуру. «Анфиса не меняет меня» почти всегда означало «Анфиса слушает веб-камеру».
 
-⚙ → **🎧 AUDIO DEVICES** lets you pick the microphone and the speakers by name. Two things matter more than the dropdown:
+⚙ → **🎧 АУДИОУСТРОЙСТВА** позволяет выбрать микрофон и динамики по имени, отфильтрованные до короткого списка, который показывает ваша ОС — и измеренные, так что каждая запись реально работает.
 
-**The list is short.** `query_devices()` returns one entry per *device × host API*, not per device — measured on an ordinary Windows machine, **41 entries for what the sound settings show as 4 microphones and 4 speakers.** The same microphone appears four times, under MME, DirectSound, WASAPI and WDM-KS, with nothing to say which is which. That is not a choice, it's a quiz. The picker takes one host API per direction, drops the "Sound Mapper" and "Primary Sound Driver" pseudo-devices that just mean "default", and deduplicates. **41 → 8.**
+Здесь важнее, чем выпадающий список, две вещи:
 
-**Every entry has been measured, not assumed.** The obvious approach is to pick the host API with the nicest names — WASAPI on Windows, which in shared mode **doesn't resample**, so with 16 kHz in and 24 kHz out against 48 kHz hardware every open failed. Adding a rate check and moving to DirectSound passes that test on both sides, and PortAudio's DirectSound **output is a silent sink**: the stream opens, every write returns success in ~0 ms, and not one sample reaches the speakers.
+**Список короткий.** `query_devices()` возвращает одну запись на *устройство × API хост*, а не на устройство — измерено на обычной Windows-машине: **41 запись против того, что настройки звука показывают как 4 микрофона и 4 динамика.** Один и тот же микрофон появляется четыре раза — MME, DirectSound, WASAPI и WDM-KS — без указания, какой к чему. Это не выбор, это викторина. Средство выбора берёт по одному API-хосту на направление, отбрасывает псевдоустройства «Sound Mapper» и «Primary Sound Driver», которые означают только «по умолчанию», и дедуплицирует. **41 → 8.**
 
-| | write(2.0 s) took | |
+**Каждая запись измерена, а не предположена.** Очевидный подход — выбрать API-хост с приятными именами — WASAPI в Windows, который в разделяемом режиме **не ресемплирует**, так как при 16 кГц на входе и 24 кГц на выходе против 48 кГц оборудования каждое открытие заканчивалось ошибкой. Добавка проверки частоты и переход на DirectSound проходят тест с обеих сторон, а вывод DirectSound у PortAudio — **мёртвый приёмник**: поток открывается, каждая запись возвращает успех за ~0 мс, ни один семпл не доходит до динамиков.
+
+| | write(2.0 с) занимал | |
 |---|---|---|
-| MME | **2.02 s** | consumed in real time |
-| DirectSound | **0.00 s** | swallowed instantly |
+| MME | **2.02 с** | потреблён в реальном времени |
+| DirectSound | **0.00 с** | проглочен мгновенно |
 
-No capability flag reports that. So the app measures it — once per host API per direction, on a background thread at startup, using silence. Two consequences worth stating plainly:
+Ни один флаг возможностей об этом не сообщает. Поэтому приложение измеряет — один раз на API-хост и направление, на фоновом потоке при запуске, с помощью тишины. Два следствия стоит озвучить:
 
-* **Each direction picks its own host API.** On Windows this lands on DirectSound for the microphone and MME for the speakers — a split no amount of reasoning would have produced.
-* **The probe runs in the mode the app actually ships.** DirectSound input passes a callback stream and fails a blocking read; probing the wrong mode rejected a microphone that works perfectly.
+* **Каждое направление выбирает свой API-хост.** На Windows это DirectSound для микрофона и MME для динамиков — раскладку, которую не произвела бы никакая логика рассуждений.
+* **Зонд запускается в том режиме, в котором приложение поставляется.** Ввод DirectSound передаёт callback-поток и не проходит блокирующее чтение; зонд неправильного режима отторг микрофон, который работает исправно.
 
-Your choice is stored **by name, not by index** — indices shift whenever something is plugged in. If the saved device is gone, it falls back to the system default and says so in the log rather than failing to start.
+Ваш выбор сохраняется **по имени, а не по индексу** — индексы сдвигаются при подключении нового устройства. Если сохранённое устройство пропало, он откатывается на системный по умолчанию и сообщает об этом в журнал, а не падает при старте.
 
-### 🔗 It stops forgetting the conversation when the connection drops
+### 🔗 Перестаёт забывать разговор, когда связь рвётся
 
-`session_resumption` was switched on in the config and the handle the server sent back was **never read** — so every reconnect started an empty session. A dropped packet, or simply changing the voice, wiped the conversation. "Unlimited sessions" leaked through exactly this hole.
+`session_resumption` был включён в конфиге, а ход, который сервер отослал обратно, **так и не читался** — так что каждое переподключение начинало пустую сессию. Отброшенный пакет или просто смена голоса — и разговор стирался. «Неограниченные сессии» просочились именно через эту дыру.
 
-The handle is captured and replayed now. A network blip, or switching your microphone, keeps the conversation intact.
+Ход теперь захватывается и воспроизводится. Сбой сети или смена микрофона сохраняют разговор нетронутым.
 
-It is held in memory only, deliberately: writing it to disk would make a fresh launch continue yesterday's chat, which sounds appealing but breaks the session-summary flow — a conversation that never ends never produces a summary, and the "yesterday we talked about…" line in the morning briefing silently disappears. Changing the **voice** also starts clean on purpose, since resuming restores the server's session state and would likely bring the old voice back with it.
+Он намеренно только в памяти, не на диске: запись на диск сделала бы новый запуск продолжением вчерашнего разговора, что звучит привлекательно, но ломает поток резюме сессии — разговор, который никогда не кончается, никогда не порождает резюме, а строчка «вчера мы разговаривали о…» в утреннем брифинге тихо исчезает. Смена **голоса** тоже стартует чисто нарочно, ведь возобновление восстанавливает состояние сессии сервера и, вероятно, вернёт старый голос.
 
-### 🩹 Fixes that came with it
+### 🩹 Исправления, которые вошли вместе с ним
 
-* **The assistant could die on a log line.** Status lines carry emoji and arrows (`📤 file_controller → Moved: a.txt → Documents/`). On a non-UTF-8 console — cp1254 on a Turkish Windows, cp1251 on a Russian one, cp932 on a Japanese one — printing one raises `UnicodeEncodeError`, and because that print sits *after* the tool's own `try/except`, it escaped into the receive loop and took the session down.
-* **Every computer command paid for two model round trips.** `computer_settings` made an *entire second Gemini call, inside the tool*, purely to translate the request into one of its own action names — because the declaration only said "The action to perform", so the model rarely filled it in. When that second call failed, the fallback was `description.lower().replace(" ", "_")`, which turns the Turkish for "turn it down" into `sesi_kis` and straight into "Unknown action". The declaration now names all 56 actions and the rest is spelling tolerance handled locally by `difflib` in microseconds. When nothing matches it suggests real action names instead of dead-ending.
-* An unresolvable saved audio device, or one the driver refuses to open, falls back to the system default and says so — on both the microphone and the speakers.
-* A rejected session-resumption handle is dropped after one attempt, so an expired handle can never be replayed on every retry and prevent the reconnect it exists to protect.
-
-
+* **Ассистент мог погибнуть от строки журнала.** Строки состояния несут эмодзи и стрелки (`📤 file_controller → Moved: a.txt → Documents/`). В консоли с не-UTF-8 — cp1254 на турецком Windows, cp1251 на русском, cp932 на японском — вывод одного поднимает `UnicodeEncodeError`, и поскольку этот вывод стоит *после* собственного `try/except` инструмента, он прорвался в цикл приёма и унёс сессию.
+* **Каждая компьютерная команда стоила двух кругов модели.** `computer_settings` делал *целый второй Gemini-вызов внутри инструмента*, только чтобы перевести запрос в одно из собственных имён действия, — ведь описание говорило лишь «Действие для выполнения», поэтому модель редко его заполняла. Когда второй вызов падал, запасной вариант был `description.lower().replace(" ", "_")`, что превращает турецкое «погасить» в `sesi_kis` и прямиком в «Неизвестное действие». Описание теперь называет все 56 действий, а остальное — допуск опечаток обрабатывается локально `difflib` за микросекунды. Когда ничего не совпадает, предлагает настоящие имена действий, а не заваливается в тупик.
+* * *
+* Неразрешимое сохранённое аудиоустройство или драйвер, отказывающий открывать, откатывается на системный по умолчанию и сообщает об этом — и на микрофоне, и на динамиках.
+* Отвергнутый ход возобновления сессии отбрасывается после одной попытки, чтобы просроченный ход не воспроизводился на каждом повторе и не мешал самому переподключению, которое он должен защищать.
 
 ---
 
-## 🗺️ Mark Roadmap
+## 🗺️ Дорожная карта
 
-| Mark | Focus |
+| Анфиса | Фокус |
 |---|---|
-| **XLIX** | Auto-start · clipboard intelligence · assistant customization |
-| **L** | Session memory · background monitoring · proactive 2.0 · instant vision |
-| **LI** | Plugin system · affective dialog · proactive audio · unlimited sessions |
-| **LII** | Voice picker · live theming · reactive HUD · recallable memory · undo · real confirmation · audio device picker · session continuity |
-| **LIII** | Wake word · Gemini 3.1 Flash Live · instant acknowledgment · self-describing action/plugin architecture |
-| *shared* | The last five above also shipped to LIII, LIV and LV at the same time — moving up a Mark never loses them |
-| **LIV+** | Plugin files: email · quiz mode · calendar · home assistant · 3D-printer · and more |
+| **1** | Автозапуск · умный буфер обмена · настройка ассистента |
+| **2** | Память сессий · фоновое наблюдение · проактивность 2.0 · мгновенное зрение |
+| **4** | Система плагинов · аффективный диалог · проактивный аудио · неограниченные сессии |
+| **5** | Выбор голоса · живая тема · реактивный интерфейс · вспоминаемая память · отмена · реальное подтверждение · выбор аудиоустройства · непрерывность сессии |
+| **6** | Слово пробуждения · Gemini 3.1 Flash Live · мгновенное признание · самоописываемая архитектура действий/плагинов |
+| *разделяемое* | Последние пять выше также вышли в LIII, LIV и LV одновременно — переход на более высокий Анфиса никогда не лишает их |
+| **7+** | Файлы плагинов: почта · режим викторин · календарь · умный дом · 3D-принтер · и другие |
 
 ---
 
-## ⚡ Quick Start
+## ⚡ Быстрый старт
 
 ```bash
-git clone https://github.com/FatihMakes/Mark-LIII.git
-cd Mark-LIII
-python setup.py        # installs deps for YOUR OS + the browser automation engine
+git clone https://github.com/Developer3000S/Voice-assistant.git
+cd Voice-assistant
+python setup.py        # устанавливает зависимости для ВАШЕЙ ОС + движок браузерной автоматизации
 python main.py
 ```
 
-`setup.py` only ever installs what your operating system needs — the Windows-only libraries are skipped automatically on macOS and Linux (and vice-versa). Prefer to do it by hand? `pip install -r requirements.txt` works too.
+`setup.py` устанавливает только то, что нужна вашей операционной системе — зависимости только для Windows автоматически пропускаются на macOS и Linux (и наоборот). Если предпочитаете сделать вручную? `pip install -r requirements.txt` тоже подойдёт.
 
-> ⚠️ **Installation Note:** If you hit a `ModuleNotFoundError` for an OS-specific package, install it with `pip install <module_name>`. The optional **wake word** engine is *not* installed here — grab it in one click from **⚙ → WAKE WORD** inside the app.
+> ⚠️ **Примечание по установке:** Если вы получите `ModuleNotFoundError` для ОС-специфичной библиотеки, установите её через `pip install <имя_модуля`. Опциональный движок **слова пробуждения** здесь *не устанавливается* — загрузите одним кликом из **⚙ → СЛОВО ПРОБУЖДЕНИЯ** в приложении.
 
 ---
 
-## 📋 Requirements
+## 📋 Требования
 
-| Requirement | Details |
+| Требование | Подробности |
 | --- | --- |
-| **OS** | Windows 10/11, macOS, or Linux |
-| **Python** | 3.11 or 3.12 |
-| **Microphone** | Required for voice interaction (and for the "Привет Анфиса" wake word) |
-| **Speakers** | Required for voice replies |
-| **API Key** | Free Gemini API key (entered on first launch → `config/api_keys.json`) |
-| **Wake word** *(optional)* | One-click download from ⚙ → WAKE WORD (`openwakeword`, a few MB, fully local) |
+| **ОС** | Windows 10/11, macOS или Linux |
+| **Python** | 3.11 или 3.12 |
+| **Микрофон** | Нужен для голосового общения (и для слова пробуждения «Привет Анфиса») |
+| **Динамики** | Нужны для голосовых ответов |
+| **API-ключ** | Бесплатный Gemini API-ключ (вводится при первом запуске → `config/api_keys.json`) |
+| **Слово пробуждения** *(опционально)* | Однокликовая загрузка из ⚙ → СЛОВО ПРОБУЖДЕНИЯ (`openwakeword`, несколько МБ, полностью локально) |
 
 ---
 
-## 🗂️ Project Structure
+## 🗂️ Структура проекта
 
 ```
-Voice Assistant/
-├── main.py                   # Core loop — Gemini Live session, audio I/O, wake/sleep state, tool dispatch
-├── ui.py                     # PyQt6 HUD — reactive waveform, log panel, settings drawer, plugin manager, camera feed
-├── setup.py                  # OS-aware installer (skips wrong-OS dependencies)
+Анфиса/
+├── main.py                   # Основной цикл — живая сессия Gemini, аудио, состояние сна/пробуждения, диспетчеризация инструментов
+├── ui.py                     # PyQt6 интерфейс — реактивная гистограмма, панель журнала, панель настроек, менеджер плагинов, видеопоток
+├── setup.py                  # ОС-зависимый установщик (пропускает не-Ваши зависимости)
 ├── plugins/
-│   ├── _template.py          # Copy this to write a new plugin — one file, drop in, done
-│   └── ...                   # Drop-in skills (each self-describes via a PLUGIN dict + run())
-├── actions/                  # Bundled skills — each self-describes via a TOOL dict + handler
-│   ├── web_search.py         # Gemini + DDG parallel search (news, research, price, compare)
-│   ├── screen_processor.py   # Screen & webcam capture for vision
-│   ├── background_monitor.py # User-configured topic watching — daily DDG check, no crypto
-│   ├── proactive.py          # Proactive 2.0 — time/context/rotation-aware check-ins
-│   ├── reminder.py           # OS-native scheduled notifications
-│   ├── system_monitor.py     # CPU / RAM / GPU / temperature telemetry
-│   ├── computer_settings.py  # Volume, brightness, WiFi, power (per-OS)
-│   ├── computer_control.py   # Keyboard shortcuts, mouse, window management
-│   ├── open_app.py           # Application launcher (per-OS name map)
-│   ├── browser_control.py    # Web browser control
-│   ├── file_controller.py    # File system operations
-│   ├── file_processor.py     # Document reading and summarization
-│   ├── send_message.py       # Messaging integration
-│   ├── weather_report.py     # Live weather data
-│   ├── flight_finder.py      # Flight search
-│   ├── youtube_video.py      # YouTube playback control
-│   ├── game_updater.py       # Game update management (Steam / Epic)
-│   ├── code_helper.py        # Code review and generation
-│   ├── dev_agent.py          # Developer task agent
-│   └── desktop.py            # Desktop and taskbar control
+│   ├── _template.py          # Скопируйте, чтобы написать новый плагин — один файл, киньте, готово
+│   └── ...                   # Подключаемые навыки (каждый описывает себя через PLUGIN dict + run())
+├── actions/                  | Встроенные навыки — каждый описывает себя через TOOL dict + обработчик
+│   ├── web_search.py         | Gemini и DDG параллельный поиск (новости, исследования, цены, сравнения)
+│   ├── screen_processor.py   | Захват экрана и веб-камеры для зрения
+│   ├── background_monitor.py | Наблюдение за заданными темами — ежедневная проверка DDG, без крипто
+│   ├── proactive.py          | Проактивность 2.0 — уведомления с учётом времени/контекста/чередования
+│   ├── reminder.py           | ОС-нативные планируемые уведомления
+│   ├── system_monitor.py     | Телеметрия CPU / RAM / GPU / температура
+│   ├── computer_settings.py  | Громкость, яркость, Wi-Fi, питание (по ОС)
+│   ├── computer_control.py   | Горячие клавиши, мышь, управление окнами
+│   ├── open_app.py           | Запуск приложений (по-ОС карта имён)
+│   ├── browser_control.py    | Управление веб-браузером
+│   ├── file_controller.py    | Операции с файловой системой
+│   ├── file_processor.py     | Чтение и резюмирование документов
+│   ├── send_message.py       | Интеграция мессенджеров
+│   ├── weather_report.py     | Актуальная погода
+│   ├── flight_finder.py      | Поиск авиабилетов
+│   ├── youtube_video.py      | Управление воспроизведением YouTube
+│   ├── game_updater.py       | Управление обновлениями игр (Steam / Epic)
+│   ├── code_helper.py        | Ревью и генерация кода
+│   ├── dev_agent.py          | Агент для задач разработки
+│   └── desktop.py            | Управление рабочим столом и панелью задач
 ├── memory/
-│   ├── memory_manager.py     # Load/save long_term.json — sessions, monitors, identity
-│   ├── config_manager.py     # api_keys.json access — key, OS, name, voice, colour, toggles
-│   └── long_term.json        # Persistent store: identity, preferences, projects, sessions, monitors
+│   ├── memory_manager.py     | Загрузка/сохранение long_term.json — сессии, наблюдатели, идентичность
+│   ├── config_manager.py     | Доступ к api_keys.json — ключ, ОС, имя, голос, цвет, переключатели
+│   └── long_term.json        | Постоянное хранилище: идентичность, предпочтения, проекты, сессии, наблюдатели
 ├── core/
-│   ├── prompt.txt            # Assistant personality and tool-routing rules
-│   ├── undo.py               # One shared undo stack — actions register how to reverse themselves
-│   ├── confirm.py            # Irreversible-action gate — the token is issued by the UI, not the model
-│   ├── audio_devices.py      # Microphone / speaker list — filtered, measured, resolved by name
-│   ├── plugin_loader.py      # Plugin engine — discovery, validation, crash isolation
-│   ├── action_loader.py      # Bundled-action engine — the built-in twin of plugin_loader
-│   └── wake_word.py          # Local "Привет Анфиса" detector — own thread, offline, opt-in
+│   ├── prompt.txt            | Личность ассистента и правила маршрутизации инструментов
+│   ├── undo.py               | Один общий стек отмены — действия регистрируют, как их отменить
+│   ├── confirm.py            | Заслон для необратимых действий — токен выдаёт интерфейс, не модель
+│   ├── audio_devices.py      | Список микрофонов/динамиков — отфильтрован, измерен, разрешён по имени
+│   ├── plugin_loader.py      | Движок плагинов — открытие, проверка, изоляция сбоев
+│   ├── action_loader.py      | Движок встроенных действий — встроенный двойник plugin_loader
+│   └── wake_word.py          | Локальный детектор «Привет Анфиса» — своя нить, оффлайн, опционально
 └── config/
-    └── api_keys.json         # API key, OS setting, assistant name, user name, voice, UI colour, toggles
+    └── api_keys.json         | API-ключ, настройка ОС, имя ассистента, имя пользователя, голос, цвет интерфейса, переключатели
 ```
 
 ---
 
-## ⚠️ License
+## ⚠️ Лицензия
 
-Personal and non-commercial use only.
-Licensed under **[Creative Commons BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)**.
+Только личное и некоммерческое использование.
+Лицензировано под **[Creative Commons BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)**.
 
 ---
 
-## 👤 Connect with the Creator
+## 👤 Связаться с создателем
 
-Engineered by a developer building a real-world Анфиса-style assistant.
-⭐ **Star the repository to support the journey to Mark 100.**
+Создан разработчиком, строящим реальный ассистент в стиле Анфиса.
+⭐ **Отметьте репозиторий «звёздочкой», чтобы поддержать путь к Анфиса 100.**
 
-| Platform | Link |
+| Платформа | Ссылка |
 | --- | --- |
 | YouTube | [@FatihMakes](https://www.youtube.com/@FatihMakes) |
 | Instagram | [@fatihmakes](https://www.instagram.com/fatihmakes) |

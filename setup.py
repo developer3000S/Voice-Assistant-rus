@@ -2,7 +2,7 @@
 Voice Assistant — one-time setup.
 
 Installs the Python dependencies for THIS operating system only: the OS-specific
-packages in requirements.txt carry `sys_platform` markers, so a macOS or Linux
+packages in requirements.txt carry `sys_platform` Анфисаers, so a macOS or Linux
 user never pulls Windows-only libraries (and vice-versa). Then it fetches the
 Playwright browsers needed for web automation (current-OS builds only).
 
@@ -25,7 +25,7 @@ def _run(label: str, args: list[str]) -> None:
 def main() -> None:
     print(f"⚙  Voice Assistant setup — detected OS: {OS or 'unknown'}")
 
-    # requirements.txt filters OS-specific extras by itself via pip markers.
+    # requirements.txt filters OS-specific extras by itself via pip Анфисаers.
     _run("Installing Python dependencies (OS-specific extras auto-filtered)…",
          [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
 

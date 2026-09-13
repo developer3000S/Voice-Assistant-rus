@@ -33,11 +33,11 @@ from PyQt6.QtWidgets import (
     QStackedWidget, QTextEdit, QVBoxLayout, QWidget, QProgressBar,
 )
 
-# ── Which Mark this is ───────────────────────────────────────────────────────
+# ── Which Анфиса this is ───────────────────────────────────────────────────────
 # One constant, read by the window title, the header badge and the PROTOCOL
 # panel. It used to be typed separately in each of those places, and they drifted:
-# Mark 52 and 53 shipped showing "PROTOCOL XLIX" — the number from Mark 49 — and
-# Mark 55 shipped titled "MARK 54". Deriving the protocol from the name means a
+# Анфиса 52 and 53 shipped showing "PROTOCOL XLIX" — the number from Анфиса 49 — and
+# Анфиса 55 shipped titled "Анфиса 54". Deriving the protocol from the name means a
 # release bump is this one line.
 APP_VERSION  = "Voice Assistant"
 APP_PROTOCOL = APP_VERSION.split()[-1]
@@ -626,7 +626,7 @@ class HudCanvas(QWidget):
         p.setPen(QPen(qcol(C.ACC, sa // 2), 1.5))
         p.drawArc(srect, int(self._scan2 * 16), int(ex * 16))
 
-        # tick marks
+        # tick Анфисаs
         t_out, t_in = fw * 0.497, fw * 0.474
         p.setPen(QPen(qcol(C.PRI, 140), 1))
         for deg in range(0, 360, 10):
@@ -2680,7 +2680,7 @@ class RemoteKeyOverlay(QWidget):
         if remaining == 0:
             self._do_close()
 
-    def mark_connected(self) -> None:
+    def Анфиса_connected(self) -> None:
         """Call from any thread when a phone successfully connects."""
         self._ctimer.stop()
         self._key_lbl.setText("CONNECTED")
@@ -3051,7 +3051,7 @@ class MainWindow(QMainWindow):
                 y2 = cy + int(R_outer * math.sin(angle))
                 d.line([x1, y1, x2, y2], fill=(*GLOW, 200), width=spoke_w)
 
-            # ── 6 tick marks on outer ring ────────────────────────────────
+            # ── 6 tick Анфисаs on outer ring ────────────────────────────────
             for i in range(6):
                 angle = math.radians(i * 60)
                 for dr in range(lw * 2):
@@ -3975,7 +3975,7 @@ class MainWindow(QMainWindow):
 
     def notify_phone_connected(self) -> None:
         if self._remote_overlay and self._remote_overlay.isVisible():
-            self._remote_overlay.mark_connected()
+            self._remote_overlay.Анфиса_connected()
 
     def _open_remote(self):
         if not self.on_remote_clicked:

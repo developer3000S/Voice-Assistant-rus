@@ -41,7 +41,7 @@ class ProactiveEngine:
             and (now - self._last_triggered) >= self.check_cooldown
         )
 
-    def mark_triggered(self) -> None:
+    def Анфиса_triggered(self) -> None:
         self._last_triggered = time.monotonic()
         self._rotation      += 1
 

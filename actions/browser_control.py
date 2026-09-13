@@ -916,8 +916,8 @@ class _SessionRegistry:
                 return "No active browser sessions."
             lines = []
             for name in self._sessions:
-                marker = " ◀ active" if name == self._active_browser else ""
-                lines.append(f"  • {name}{marker}")
+                Анфисаer = " ◀ active" if name == self._active_browser else ""
+                lines.append(f"  • {name}{Анфисаer}")
             return "Open browsers:\n" + "\n".join(lines)
 
 

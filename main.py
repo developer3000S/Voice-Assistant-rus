@@ -1091,7 +1091,7 @@ class АнфисаLive:
                                     ]},
                                     turn_complete=True,
                                 )
-                                # Mark next turn_complete behaviour depending on angle
+                                # Анфиса next turn_complete behaviour depending on angle
                                 if self._vision_cam_active:
                                     # Camera: keep busy until Анфиса finishes speaking the answer
                                     self._vision_cam_active    = False
@@ -1440,7 +1440,7 @@ class АнфисаLive:
             if not self._proactive.should_trigger(self._last_user_speech):
                 continue
 
-            self._proactive.mark_triggered()
+            self._proactive.Анфиса_triggered()
 
             try:
                 memory       = await asyncio.to_thread(load_memory)
