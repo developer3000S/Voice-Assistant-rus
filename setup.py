@@ -6,7 +6,7 @@ packages in requirements.txt carry `sys_platform` Anfisaers, so a macOS or Linux
 user never pulls Windows-only libraries (and vice-versa). Then it fetches the
 Playwright browsers needed for web automation (current-OS builds only).
 
-The optional local wake word ("Привет Anfisa") is NOT installed here — it's a
+The optional local wake word ("Привет Анфиса") is NOT installed here — it's a
 one-click, opt-in download from ⚙ → WAKE WORD inside the app.
 """
 import platform
@@ -65,7 +65,7 @@ def main() -> None:
     print("\n✅ Setup complete!")
     print("   1) Launch it:  python main.py")
     print("   2) Paste your free Gemini API key when the setup screen appears.")
-    print("   3) (Optional) Enable 'Привет Anfisa' from ⚙ → WAKE WORD.")
+    print("   3) (Optional) Enable 'Привет Анфиса' from ⚙ → WAKE WORD.")
 
 
 if __name__ == "__main__":

@@ -49,7 +49,7 @@ pywinauto;  sys_platform == "win32"
 pywin32;    sys_platform == "win32"
 wmi;        sys_platform == "win32"
 
-# ── Optional: local wake word ("Привет Anfisa") ──────────────────────────────────
+# ── Optional: local wake word ("Привет Анфиса") ──────────────────────────────────
 # Deliberately NOT installed by default — it's opt-in. Enable it (and download
 # the tiny model) with one click from ⚙ → WAKE WORD in the app, or install it
 # yourself with:  pip install openwakeword

@@ -456,7 +456,7 @@ class AnfisaLive:
         return True
 
     def _on_wake_detected(self) -> None:
-        """Called from the detector thread when 'Привет Anfisa' is heard."""
+        """Called from the detector thread when 'Привет Анфиса' is heard."""
         self.wake(reason="wake word")
 
     def wake(self, reason: str = "wake word") -> None:
@@ -474,7 +474,7 @@ class AnfisaLive:
         self._awake = False
         self.set_speaking(False)
         self.ui.set_state("SLEEPING")
-        self.ui.write_log(f"SYS: Sleeping — {reason}. Say 'Привет Anfisa' to wake me.")
+        self.ui.write_log(f"SYS: Sleeping — {reason}. Say 'Привет Анфиса' to wake me.")
 
     async def _run_sleep_watch(self) -> None:
         """Auto-sleep after the configured silence window (wake-word mode only)."""
@@ -613,9 +613,9 @@ class AnfisaLive:
             return
         # Respect wake-word sleep: a typed command must not be answered while
         # asleep either (the sleep gate is not just for the mic). Wake first with
-        # "Привет Anfisa" or the WAKE NOW button.
+        # "Привет Анфиса" or the WAKE NOW button.
         if self._wake_enabled and not self._awake:
-            self.ui.write_log("SYS: I'm asleep — say 'Привет Anfisa' or tap WAKE NOW first.")
+            self.ui.write_log("SYS: I'm asleep — say 'Привет Анфиса' or tap WAKE NOW first.")
             return
         asyncio.run_coroutine_threadsafe(
             self.session.send_client_content(
@@ -1595,12 +1595,12 @@ class AnfisaLive:
                         self.ui.write_log("SYS: Reconnected — conversation restored.")
 
                     # Wake word: if enabled, come up ASLEEP (mic gated, silent)
-                    # until the user says "Привет Anfisa" or taps wake in the UI.
+                    # until the user says "Привет Анфиса" or taps wake in the UI.
                     if self._wake_enabled:
                         self._ensure_wake_detector()
                         self._awake = False
                         self.ui.set_state("SLEEPING")
-                        self.ui.write_log("SYS: Anfisa online — sleeping. Say 'Привет Anfisa' to wake me.")
+                        self.ui.write_log("SYS: Anfisa online — sleeping. Say 'Привет Анфиса' to wake me.")
                     else:
                         self._awake = True
                         self.ui.set_state("LISTENING")
