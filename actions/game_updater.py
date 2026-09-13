@@ -810,7 +810,7 @@ def _schedule_daily_update(hour: int = 3, minute: int = 0) -> str:
 
 
 def _schedule_windows(hour: int, minute: int) -> str:
-    task_name   = "Анфиса_GameUpdater"
+    task_name   = "Anfisa_GameUpdater"
     script_path = Path(__file__).resolve()
     subprocess.run(["schtasks", "/Delete", "/TN", task_name, "/F"], capture_output=True, **_CNW)
     for extra in (["/RL", "HIGHEST", "/RU", "SYSTEM"], []):
@@ -826,13 +826,13 @@ def _schedule_windows(hour: int, minute: int) -> str:
 def _schedule_mac(hour: int, minute: int) -> str:
     plist_dir   = Path.home() / "Library" / "LaunchAgents"
     plist_dir.mkdir(parents=True, exist_ok=True)
-    plist_path  = plist_dir / "com.Анфиса.gameupdater.plist"
+    plist_path  = plist_dir / "com.Anfisa.gameupdater.plist"
     script_path = Path(__file__).resolve()
     plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-    <key>Label</key><string>com.Анфиса.gameupdater</string>
+    <key>Label</key><string>com.Anfisa.gameupdater</string>
     <key>ProgramArguments</key>
     <array>
         <string>{sys.executable}</string>
@@ -860,12 +860,12 @@ def _schedule_mac(hour: int, minute: int) -> str:
 
 def _schedule_linux(hour: int, minute: int) -> str:
     script_path = Path(__file__).resolve()
-    Анфисаer      = "# Анфиса_GameUpdater"
-    cron_entry  = f"{minute} {hour} * * * {sys.executable} {script_path} --scheduled  {Анфисаer}"
+    Anfisaer      = "# Anfisa_GameUpdater"
+    cron_entry  = f"{minute} {hour} * * * {sys.executable} {script_path} --scheduled  {Anfisaer}"
     try:
         existing = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
         lines    = [l for l in existing.stdout.splitlines()
-                    if Анфисаer not in l and str(script_path) not in l]
+                    if Anfisaer not in l and str(script_path) not in l]
         lines.append(cron_entry)
         proc = subprocess.run(["crontab", "-"],
                               input="\n".join(lines) + "\n",
@@ -880,13 +880,13 @@ def _schedule_linux(hour: int, minute: int) -> str:
 def _cancel_scheduled_update() -> str:
     if is_windows():
         result = subprocess.run(
-            ["schtasks", "/Delete", "/TN", "Анфиса_GameUpdater", "/F"],
+            ["schtasks", "/Delete", "/TN", "Anfisa_GameUpdater", "/F"],
             capture_output=True, text=True, **_CNW
         )
         return ("Scheduled update cancelled."
                 if result.returncode == 0 else "No scheduled update found.")
     if is_mac():
-        plist_path = Path.home() / "Library" / "LaunchAgents" / "com.Анфиса.gameupdater.plist"
+        plist_path = Path.home() / "Library" / "LaunchAgents" / "com.Anfisa.gameupdater.plist"
         if plist_path.exists():
             subprocess.run(["launchctl", "unload", str(plist_path)], capture_output=True)
             plist_path.unlink()
@@ -896,7 +896,7 @@ def _cancel_scheduled_update() -> str:
     try:
         existing = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
         lines    = [l for l in existing.stdout.splitlines()
-                    if "Анфиса_GameUpdater" not in l]
+                    if "Anfisa_GameUpdater" not in l]
         subprocess.run(["crontab", "-"],
                        input="\n".join(lines) + "\n", text=True)
         return "Scheduled update cancelled."
@@ -907,7 +907,7 @@ def _cancel_scheduled_update() -> str:
 def _get_schedule_status() -> str:
     if is_windows():
         result = subprocess.run(
-            ["schtasks", "/Query", "/TN", "Анфиса_GameUpdater", "/FO", "LIST"],
+            ["schtasks", "/Query", "/TN", "Anfisa_GameUpdater", "/FO", "LIST"],
             capture_output=True, text=True, **_CNW
         )
         if result.returncode != 0:
@@ -919,15 +919,15 @@ def _get_schedule_status() -> str:
         return "Game update is scheduled."
     if is_mac():
         plist_path = (Path.home() / "Library" / "LaunchAgents"
-                      / "com.Анфиса.gameupdater.plist")
+                      / "com.Anfisa.gameupdater.plist")
         return ("Game update is scheduled via launchd."
                 if plist_path.exists() else "No scheduled game update found.")
 
     try:
         result = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
-        if "Анфиса_GameUpdater" in result.stdout:
+        if "Anfisa_GameUpdater" in result.stdout:
             for line in result.stdout.splitlines():
-                if "Анфиса_GameUpdater" in line:
+                if "Anfisa_GameUpdater" in line:
                     return f"Game update is scheduled: {line.split('#')[0].strip()}"
         return "No scheduled game update found."
     except Exception:

@@ -33,11 +33,11 @@ from PyQt6.QtWidgets import (
     QStackedWidget, QTextEdit, QVBoxLayout, QWidget, QProgressBar,
 )
 
-# ── Which Анфиса this is ───────────────────────────────────────────────────────
+# ── Which Anfisa this is ───────────────────────────────────────────────────────
 # One constant, read by the window title, the header badge and the PROTOCOL
 # panel. It used to be typed separately in each of those places, and they drifted:
-# Анфиса 52 and 53 shipped showing "PROTOCOL XLIX" — the number from Анфиса 49 — and
-# Анфиса 55 shipped titled "Анфиса 54". Deriving the protocol from the name means a
+# Anfisa 52 and 53 shipped showing "PROTOCOL XLIX" — the number from Anfisa 49 — and
+# Anfisa 55 shipped titled "Anfisa 54". Deriving the protocol from the name means a
 # release bump is this one line.
 APP_VERSION  = "Voice Assistant"
 APP_PROTOCOL = APP_VERSION.split()[-1]
@@ -378,7 +378,7 @@ class _SysMetrics:
 _metrics = _SysMetrics()
 
 class HudCanvas(QWidget):
-    def __init__(self, face_path: str, assistant_name: str = "J.A.R.V.I.S", parent=None):
+    def __init__(self, face_path: str, assistant_name: str = "Anfisa", parent=None):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent)
         self.setMinimumSize(300, 300)
@@ -626,7 +626,7 @@ class HudCanvas(QWidget):
         p.setPen(QPen(qcol(C.ACC, sa // 2), 1.5))
         p.drawArc(srect, int(self._scan2 * 16), int(ex * 16))
 
-        # tick Анфисаs
+        # tick Anfisas
         t_out, t_in = fw * 0.497, fw * 0.474
         p.setPen(QPen(qcol(C.PRI, 140), 1))
         for deg in range(0, 360, 10):
@@ -717,7 +717,7 @@ class HudCanvas(QWidget):
         p.drawText(QRectF(0, sy, W, 26), Qt.AlignmentFlag.AlignCenter, txt)
 
         # waveform — reacts to the real audio level (mic while listening,
-        # Анфиса's own voice while speaking). Falls back to a gentle idle
+        # Anfisa's own voice while speaking). Falls back to a gentle idle
         # ripple when there's no sound. _amp_disp is the smoothed 0–1 level.
         wy = sy + 30
         N, bw = 36, 8
@@ -837,7 +837,7 @@ class LogWidget(QTextEdit):
         self._text    = ""
         self._pos     = 0
         self._tag     = "sys"
-        self._ai_name_lc = "Анфиса"   # updated when assistant name changes
+        self._ai_name_lc = "Anfisa"   # updated when assistant name changes
         self._tmr = QTimer(self)
         self._tmr.timeout.connect(self._step)
         self._sig.connect(self._enqueue)
@@ -860,7 +860,7 @@ class LogWidget(QTextEdit):
         tl = self._text.lower()
         _ai_pfx = f"{self._ai_name_lc}:"
         if   tl.startswith("you:"):                              self._tag = "you"
-        elif tl.startswith(_ai_pfx) or tl.startswith("Анфиса:"): self._tag = "ai"
+        elif tl.startswith(_ai_pfx) or tl.startswith("Anfisa:"): self._tag = "ai"
         elif tl.startswith("file:"):                             self._tag = "file"
         elif "err" in tl:                                        self._tag = "err"
         else:                                                    self._tag = "sys"
@@ -992,7 +992,7 @@ class FileDropZone(QWidget):
 
     def _browse(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Select a file for Анфиса", str(Path.home()),
+            self, "Select a file for Anfisa", str(Path.home()),
             "All Files (*.*);;"
             "Images (*.jpg *.jpeg *.png *.gif *.webp *.bmp *.svg);;"
             "Documents (*.pdf *.docx *.txt *.md *.pptx);;"
@@ -1218,7 +1218,7 @@ class SetupOverlay(QWidget):
             return w
 
         layout.addWidget(_lbl("◈  INITIALISATION REQUIRED", 13, True))
-        layout.addWidget(_lbl("Configure J.A.R.V.I.S. before first boot.", 9, color=C.PRI_DIM))
+        layout.addWidget(_lbl("Configure Anfisa. before first boot.", 9, color=C.PRI_DIM))
         layout.addSpacing(6)
 
         sep = QFrame(); sep.setFrameShape(QFrame.Shape.HLine)
@@ -1414,7 +1414,7 @@ class CustomizeOverlay(QWidget):
     saved = pyqtSignal(str, str, str, str)   # assistant_name, user_name, ui_color, voice
     _OW, _OH = 400, 588
 
-    def __init__(self, assistant_name="Анфиса", user_name="",
+    def __init__(self, assistant_name="Anfisa", user_name="",
                  ui_color=DEFAULT_UI_COLOR, voice="", parent=None):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -1620,7 +1620,7 @@ class CustomizeOverlay(QWidget):
         self.hide()
 
     def _save(self):
-        name = self._name_input.text().strip() or "Анфиса"
+        name = self._name_input.text().strip() or "Anfisa"
         user = self._user_input.text().strip()
         self.saved.emit(name, user, self._sel_color or DEFAULT_UI_COLOR, self._sel_voice)
         self.hide()
@@ -1840,11 +1840,11 @@ class ConfirmBanner(_HudOverlay):
 
 
 class AudioDeviceOverlay(_HudOverlay):
-    """Choose which microphone Анфиса listens to and which speakers it uses.
+    """Choose which microphone Anfisa listens to and which speakers it uses.
 
     Both audio streams used to open with no `device=` at all, so they always
     took the OS default — which on Windows moves by itself the moment a headset
-    is plugged in. 'Анфиса can't hear me' is usually 'Анфиса is listening to the
+    is plugged in. 'Anfisa can't hear me' is usually 'Anfisa is listening to the
     webcam'."""
 
     picked = pyqtSignal()      # emitted after Apply, when something changed
@@ -1912,10 +1912,10 @@ class AudioDeviceOverlay(_HudOverlay):
             lay.addWidget(box)
             return box
 
-        self._in_box  = _row("MICROPHONE — what Анфиса hears you with",
+        self._in_box  = _row("MICROPHONE — what Anfisa hears you with",
                              "input", get_input_device())
         lay.addSpacing(4)
-        self._out_box = _row("SPEAKERS — what Анфиса talks through",
+        self._out_box = _row("SPEAKERS — what Anfisa talks through",
                              "output", get_output_device())
 
         note = QLabel("Applying reconnects the session. Your conversation is kept.")
@@ -1969,7 +1969,7 @@ class AudioDeviceOverlay(_HudOverlay):
 
 
 class MemoryOverlay(_HudOverlay):
-    """Everything Анфиса has stored about you, and when it learned it.
+    """Everything Anfisa has stored about you, and when it learned it.
 
     Memory used to be a 2200-character store that deleted its oldest entries
     when full and mentioned it only on stdout. The cap is gone; this panel is
@@ -2063,7 +2063,7 @@ class MemoryOverlay(_HudOverlay):
 
         from memory.memory_manager import all_entries_for_ui
 
-        hdr = QLabel("🧠  WHAT Анфиса REMEMBERS")
+        hdr = QLabel("🧠  WHAT Anfisa REMEMBERS")
         hdr.setFont(QFont("Courier New", 12, QFont.Weight.Bold))
         hdr.setStyleSheet(f"color: {C.PRI}; background: transparent;")
         self._lay.addWidget(hdr)
@@ -2165,7 +2165,7 @@ class MemoryOverlay(_HudOverlay):
 
 
 class ClipboardPanel(QWidget):
-    """Floating panel shown when text is copied — offers quick Анфиса actions."""
+    """Floating panel shown when text is copied — offers quick Anfisa actions."""
 
     action_requested = pyqtSignal(str)
     _W, _H = 326, 112
@@ -2680,7 +2680,7 @@ class RemoteKeyOverlay(QWidget):
         if remaining == 0:
             self._do_close()
 
-    def Анфиса_connected(self) -> None:
+    def Anfisa_connected(self) -> None:
         """Call from any thread when a phone successfully connects."""
         self._ctimer.stop()
         self._key_lbl.setText("CONNECTED")
@@ -2697,7 +2697,7 @@ class RemoteKeyOverlay(QWidget):
         self._qr_label.setStyleSheet(
             "color: #00ff88; background: #001a0d; border-radius: 10px;"
         )
-        self._timer_lbl.setText("Phone connected — Анфиса ready")
+        self._timer_lbl.setText("Phone connected — Anfisa ready")
         self._timer_lbl.setStyleSheet(f"color: {C.GREEN}; background: transparent;")
 
     def _refresh_key(self):
@@ -2753,7 +2753,7 @@ class MainWindow(QMainWindow):
 
         # Load customization from config
         _cfg = _read_full_config()
-        self._assistant_name: str = (_cfg.get("assistant_name") or "Анфиса").strip()
+        self._assistant_name: str = (_cfg.get("assistant_name") or "Anfisa").strip()
         _display = self._assistant_name.upper()
 
         # Apply the saved UI colour BEFORE panels/stylesheets are built
@@ -2773,13 +2773,13 @@ class MainWindow(QMainWindow):
 
         self.on_text_command   = None
         self.on_remote_clicked = None   # callable: () -> (url, key) | None
-        self.on_interrupt      = None   # callable: () -> None — stop Анфиса mid-speech
+        self.on_interrupt      = None   # callable: () -> None — stop Anfisa mid-speech
         self.on_voice_change   = None   # callable: () -> None — rebuild session with new voice
         self.on_audio_device_change = None  # callable: () -> None — reopen audio streams
         self._confirm_overlay  = None   # live ConfirmBanner, if one is on screen
-        self.get_plugins       = None   # callable: () -> list[dict], set by АнфисаLive
-        self.get_plugin_settings = None # callable: () -> list[dict] settings schemas, set by АнфисаLive
-        self.on_wake_toggle    = None   # callable: (enable: bool) -> str, set by АнфисаLive
+        self.get_plugins       = None   # callable: () -> list[dict], set by AnfisaLive
+        self.get_plugin_settings = None # callable: () -> list[dict] settings schemas, set by AnfisaLive
+        self.on_wake_toggle    = None   # callable: (enable: bool) -> str, set by AnfisaLive
         self.on_wake_manual    = None   # callable: () -> None — manual sleep/wake
         self.wake_get_state    = None   # callable: () -> dict {enabled, awake, ready}
         self._muted            = False
@@ -2999,9 +2999,9 @@ class MainWindow(QMainWindow):
     # Icon generation — arc-reactor style, rendered with Pillow
     # ------------------------------------------------------------------
     @staticmethod
-    def _build_Анфиса_icon(out_path: Path) -> bool:
+    def _build_Anfisa_icon(out_path: Path) -> bool:
         """
-        Render a Анфиса arc-reactor icon at 4× resolution and downsample
+        Render a Anfisa arc-reactor icon at 4× resolution and downsample
         for crisp results at all sizes. Saves a multi-res .ico to out_path.
         Returns True on success.
         """
@@ -3051,7 +3051,7 @@ class MainWindow(QMainWindow):
                 y2 = cy + int(R_outer * math.sin(angle))
                 d.line([x1, y1, x2, y2], fill=(*GLOW, 200), width=spoke_w)
 
-            # ── 6 tick Анфисаs on outer ring ────────────────────────────────
+            # ── 6 tick Anfisas on outer ring ────────────────────────────────
             for i in range(6):
                 angle = math.radians(i * 60)
                 for dr in range(lw * 2):
@@ -3114,7 +3114,7 @@ class MainWindow(QMainWindow):
             sc.TargetPath       = target
             sc.Arguments        = f'"{args}"'
             sc.WorkingDirectory = work_dir
-            sc.Description      = "J.A.R.V.I.S AI Assistant"
+            sc.Description      = "Anfisa AI Assistant"
             sc.IconLocation     = icon_loc
             sc.save()
             return
@@ -3129,7 +3129,7 @@ class MainWindow(QMainWindow):
             f'sc.TargetPath = "{target}"',
             f'sc.Arguments = Chr(34) & "{args}" & Chr(34)',
             f'sc.WorkingDirectory = "{work_dir}"',
-            'sc.Description = "J.A.R.V.I.S AI Assistant"',
+            'sc.Description = "Anfisa AI Assistant"',
             f'sc.IconLocation = "{icon_loc}"',
             'sc.Save',
         ])
@@ -3241,9 +3241,9 @@ class MainWindow(QMainWindow):
         desktop = self._get_desktop_dir()
 
         # Arc-reactor icon (.ico — also exported as .png for Linux/macOS)
-        ico_path = Path(__file__).resolve().parent / "config" / "Анфиса.ico"
+        ico_path = Path(__file__).resolve().parent / "config" / "Anfisa.ico"
         if not ico_path.exists():
-            self._build_Анфиса_icon(ico_path)
+            self._build_Anfisa_icon(ico_path)
 
         try:
             _os = platform.system()
@@ -3252,14 +3252,14 @@ class MainWindow(QMainWindow):
             if _os == "Windows":
                 pythonw  = python.parent / "pythonw.exe"
                 target   = str(pythonw if pythonw.exists() else python)
-                lnk      = str(desktop / "J.A.R.V.I.S.lnk")
+                lnk      = str(desktop / "Anfisa.lnk")
                 icon_loc = str(ico_path) if ico_path.exists() else f"{target},0"
                 self._create_lnk_windows(lnk, target, str(script),
                                          str(script.parent), icon_loc)
 
             # ── macOS — proper .app bundle (no Terminal window) ───────────────
             elif _os == "Darwin":
-                app     = desktop / "J.A.R.V.I.S.app"
+                app     = desktop / "Anfisa.app"
                 mac_dir = app / "Contents" / "MacOS"
                 res_dir = app / "Contents" / "Resources"
                 mac_dir.mkdir(parents=True, exist_ok=True)
@@ -3267,7 +3267,7 @@ class MainWindow(QMainWindow):
 
                 # Launcher executable (bash — runs as background process,
                 # macOS does NOT open Terminal for executables inside .app bundles)
-                launcher = mac_dir / "Анфиса"
+                launcher = mac_dir / "Anfisa"
                 launcher.write_text(
                     "#!/usr/bin/env bash\n"
                     f'cd "{script.parent}"\n'
@@ -3282,10 +3282,10 @@ class MainWindow(QMainWindow):
                     '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" '
                     '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
                     '<plist version="1.0"><dict>\n'
-                    '  <key>CFBundleExecutable</key><string>Анфиса</string>\n'
+                    '  <key>CFBundleExecutable</key><string>Anfisa</string>\n'
                     '  <key>CFBundleIdentifier</key>'
-                    '<string>com.Анфиса.assistant</string>\n'
-                    '  <key>CFBundleName</key><string>J.A.R.V.I.S</string>\n'
+                    '<string>com.Anfisa.assistant</string>\n'
+                    '  <key>CFBundleName</key><string>Anfisa</string>\n'
                     '  <key>CFBundlePackageType</key><string>APPL</string>\n'
                     '  <key>CFBundleVersion</key><string>1.0</string>\n'
                     '</dict></plist>\n'
@@ -3323,10 +3323,10 @@ class MainWindow(QMainWindow):
                         png_path = ico_path  # fallback to .ico
 
                 icon_line = f"Icon={png_path}\n" if png_path.exists() else ""
-                desk = desktop / "J.A.R.V.I.S.desktop"
+                desk = desktop / "Anfisa.desktop"
                 desk.write_text(
                     "[Desktop Entry]\n"
-                    "Name=J.A.R.V.I.S\n"
+                    "Name=Anfisa\n"
                     f"Exec={python} {script}\n"
                     f"Path={script.parent}\n"
                     "Type=Application\n"
@@ -3477,7 +3477,7 @@ class MainWindow(QMainWindow):
         self._title_lbl.setStyleSheet(f"color: {C.PRI}; background: transparent;")
         mid.addWidget(self._title_lbl)
         _sub_text = ("Just A Rather Very Intelligent System"
-                     if _disp in ("Анфиса", "J.A.R.V.I.S")
+                     if _disp in ("Anfisa", "Anfisa")
                      else "Personal AI Assistant")
         self._sub_lbl = QLabel(_sub_text)
         self._sub_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -3975,7 +3975,7 @@ class MainWindow(QMainWindow):
 
     def notify_phone_connected(self) -> None:
         if self._remote_overlay and self._remote_overlay.isVisible():
-            self._remote_overlay.Анфиса_connected()
+            self._remote_overlay.Anfisa_connected()
 
     def _open_remote(self):
         if not self.on_remote_clicked:
@@ -4016,7 +4016,7 @@ class MainWindow(QMainWindow):
                 key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
                     r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_READ)
                 try:
-                    winreg.QueryValueEx(key, "Анфиса_AI")
+                    winreg.QueryValueEx(key, "Anfisa_AI")
                     return True
                 except FileNotFoundError:
                     return False
@@ -4024,9 +4024,9 @@ class MainWindow(QMainWindow):
                     winreg.CloseKey(key)
             elif _OS == "Darwin":
                 return (Path.home() / "Library" / "LaunchAgents"
-                        / "com.Анфиса.assistant.plist").exists()
+                        / "com.Anfisa.assistant.plist").exists()
             else:
-                return (Path.home() / ".config" / "autostart" / "Анфиса.desktop").exists()
+                return (Path.home() / ".config" / "autostart" / "Anfisa.desktop").exists()
         except Exception:
             return False
 
@@ -4039,17 +4039,17 @@ class MainWindow(QMainWindow):
                 reg = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
                     r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_ALL_ACCESS)
                 if currently_on:
-                    winreg.DeleteValue(reg, "Анфиса_AI")
+                    winreg.DeleteValue(reg, "Anfisa_AI")
                 else:
                     pythonw = Path(sys.executable).parent / "pythonw.exe"
                     exe = str(pythonw if pythonw.exists() else sys.executable)
-                    winreg.SetValueEx(reg, "Анфиса_AI", 0, winreg.REG_SZ,
+                    winreg.SetValueEx(reg, "Anfisa_AI", 0, winreg.REG_SZ,
                                       f'"{exe}" "{script}"')
                 winreg.CloseKey(reg)
             elif _OS == "Darwin":
                 plist_dir = Path.home() / "Library" / "LaunchAgents"
                 plist_dir.mkdir(parents=True, exist_ok=True)
-                plist = plist_dir / "com.Анфиса.assistant.plist"
+                plist = plist_dir / "com.Anfisa.assistant.plist"
                 if currently_on:
                     plist.unlink(missing_ok=True)
                 else:
@@ -4058,7 +4058,7 @@ class MainWindow(QMainWindow):
                         '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" '
                         '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
                         '<plist version="1.0"><dict>\n'
-                        '  <key>Label</key><string>com.Анфиса.assistant</string>\n'
+                        '  <key>Label</key><string>com.Anfisa.assistant</string>\n'
                         '  <key>ProgramArguments</key><array>\n'
                         f'    <string>{sys.executable}</string>\n'
                         f'    <string>{script}</string>\n'
@@ -4069,7 +4069,7 @@ class MainWindow(QMainWindow):
             else:
                 desk_dir = Path.home() / ".config" / "autostart"
                 desk_dir.mkdir(parents=True, exist_ok=True)
-                desk = desk_dir / "Анфиса.desktop"
+                desk = desk_dir / "Anfisa.desktop"
                 if currently_on:
                     desk.unlink(missing_ok=True)
                 else:
@@ -4129,7 +4129,7 @@ class MainWindow(QMainWindow):
                         "awake": bool(s.get("awake"))}
             except Exception:
                 pass
-        # Before АнфисаLive has wired its callback (drawer built at startup).
+        # Before AnfisaLive has wired its callback (drawer built at startup).
         ready, enabled = False, False
         try:
             from core.wake_word import is_ready
@@ -4190,7 +4190,7 @@ class MainWindow(QMainWindow):
                 self._wake_dl_sig.emit(ok, msg)
             threading.Thread(target=_work, daemon=True).start()
             return
-        # Already downloaded → just flip enabled/disabled through АнфисаLive.
+        # Already downloaded → just flip enabled/disabled through AnfisaLive.
         if self.on_wake_toggle:
             try:
                 self.on_wake_toggle(not st["enabled"])
@@ -4242,7 +4242,7 @@ class MainWindow(QMainWindow):
             self._customize_overlay.hide()
         cw = self.centralWidget()
         ov = CustomizeOverlay(
-            cfg.get("assistant_name", "Анфиса") or "Анфиса",
+            cfg.get("assistant_name", "Anfisa") or "Anfisa",
             cfg.get("user_name", ""),
             cfg.get("ui_color", "") or DEFAULT_UI_COLOR,
             cfg.get("voice_name", ""),
@@ -4269,11 +4269,11 @@ class MainWindow(QMainWindow):
     def _apply_name_update(self, name: str, user_name: str, ui_color: str = "",
                            voice: str = ""):
         """Update all name/theme-dependent UI elements and persist to config."""
-        self._assistant_name = name.strip() or "Анфиса"
+        self._assistant_name = name.strip() or "Anfisa"
         display = self._assistant_name.upper()
         self.setWindowTitle(f"{display} — {APP_VERSION}")
         self._title_lbl.setText(display)
-        if display in ("Анфиса", "J.A.R.V.I.S"):
+        if display in ("Anfisa", "Anfisa"):
             self._sub_lbl.setText("Just A Rather Very Intelligent System")
         else:
             self._sub_lbl.setText("Personal AI Assistant")
@@ -4510,7 +4510,7 @@ class MainWindow(QMainWindow):
             self._overlay.hide()
             self._overlay = None
         self._apply_state("LISTENING")
-        self._assistant_name = _read_full_config().get("assistant_name", "Анфиса") or "Анфиса"
+        self._assistant_name = _read_full_config().get("assistant_name", "Anfisa") or "Anfisa"
         self._log.append_log(f"SYS: Initialised. OS={os_name.upper()}. {self._assistant_name} online.")
 
 
@@ -4523,7 +4523,7 @@ class _RootShim:
         pass
 
 
-class АнфисаUI:
+class AnfisaUI:
     def __init__(self, face_path: str, size=None):
         self._app = QApplication.instance() or QApplication(sys.argv)
         self._app.setStyle("Fusion")

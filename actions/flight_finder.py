@@ -173,7 +173,7 @@ def _parse_flights_with_gemini(
                 system_instruction=(
                     "You are a flight data extraction expert. "
                     "Extract flight information from raw webpage text. "
-                    "Return ONLY valid JSON — no Анфисаdown, no explanation."
+                    "Return ONLY valid JSON — no Anfisadown, no explanation."
                 )
             ),
         )
@@ -240,7 +240,7 @@ def _format_text_report(
     page_url:    str,
 ) -> str:
     lines = [
-        "Анфиса — Flight Search Results",
+        "Anfisa — Flight Search Results",
         "─" * 50,
         f"Route     : {origin} → {destination}",
         f"Date      : {date}",

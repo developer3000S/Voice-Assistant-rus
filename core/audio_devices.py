@@ -1,12 +1,12 @@
 """
-core/audio_devices.py — pick which microphone and which speakers Анфиса uses.
+core/audio_devices.py — pick which microphone and which speakers Anfisa uses.
 
 WHY
     Both audio streams in main.py were opened without a `device=` argument, so
     they always took whatever the operating system called "default". On a laptop
     with a built-in mic, a webcam mic and a headset that is a coin toss — and on
     Windows the default *moves on its own* the moment you plug a headset in.
-    "Анфиса can't hear me" almost always means "Анфиса is listening to the
+    "Anfisa can't hear me" almost always means "Anfisa is listening to the
     monitor's microphone".
 
 WHY NAMES, NOT INDICES
@@ -17,7 +17,7 @@ WHY NAMES, NOT INDICES
 
 WHY THIS IS CACHED
     `sd.query_devices()` talks to the host audio API and can take a few hundred
-    milliseconds on a Windows machine with many endpoints. Анфиса LV learned this
+    milliseconds on a Windows machine with many endpoints. Anfisa LV learned this
     lesson the expensive way — a 2.1-second `openwakeword` import on the Qt
     thread made the settings drawer look like it was broken. So the list is
     fetched once on a background thread at startup and served from cache.

@@ -52,8 +52,8 @@ def is_configured() -> bool:
 
 
 def get_assistant_name() -> str:
-    """Return the configured assistant name, or 'Анфиса' if not set."""
-    return load_api_keys().get("assistant_name", "Анфиса") or "Анфиса"
+    """Return the configured assistant name, or 'Anfisa' if not set."""
+    return load_api_keys().get("assistant_name", "Anfisa") or "Anfisa"
 
 
 def get_user_name() -> str:
@@ -70,7 +70,7 @@ def save_assistant_config(assistant_name: str, user_name: str) -> None:
             data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
         except Exception:
             data = {}
-    data["assistant_name"] = assistant_name.strip() or "Анфиса"
+    data["assistant_name"] = assistant_name.strip() or "Anfisa"
     data["user_name"] = user_name.strip()
     CONFIG_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
 
@@ -105,7 +105,7 @@ def save_voice(voice_name: str) -> None:
 
 
 def get_wake_word_enabled() -> bool:
-    """Whether local wake-word gating is on (assistant sleeps until 'Привет Анфиса')."""
+    """Whether local wake-word gating is on (assistant sleeps until 'Привет Anfisa')."""
     return load_api_keys().get("wake_word_enabled", False)
 
 

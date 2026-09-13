@@ -1,8 +1,8 @@
 """
-Drop-in Анфиса plugin template.
+Drop-in Anfisa plugin template.
 
 Copy this file, rename it (no leading underscore), fill in PLUGIN and run().
-No other file needs to change — Анфиса discovers this automatically at startup.
+No other file needs to change — Anfisa discovers this automatically at startup.
 """
 
 PLUGIN = {
@@ -25,7 +25,7 @@ PLUGIN = {
 def run(parameters: dict, player=None, session_memory=None) -> str:
     """
     parameters: dict of the args Gemini extracted, matching PLUGIN['parameters'].
-    player: the АнфисаUI instance — use player.write_log(f"Анфиса: ...") to log,
+    player: the AnfisaUI instance — use player.write_log(f"Anfisa: ...") to log,
             same as actions/*.py. May be None.
     session_memory: reserved, usually None today (core tools mostly pass None too).
     Return a short natural-language string — this is spoken back to the user.
@@ -39,7 +39,7 @@ def run(parameters: dict, player=None, session_memory=None) -> str:
         return f"Sir, my_plugin failed: {e}"
     if player:
         try:
-            player.write_log(f"Анфиса: {result_text}")
+            player.write_log(f"Anfisa: {result_text}")
         except Exception:
             pass
     return result_text

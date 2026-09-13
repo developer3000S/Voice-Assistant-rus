@@ -8,14 +8,14 @@ from datetime import datetime
 
 class ProactiveEngine:
     """
-    Decides when Анфиса should speak unprompted and builds a context-rich prompt.
+    Decides when Anfisa should speak unprompted and builds a context-rich prompt.
 
     Improvements over 1.0:
       - Time-of-day awareness  (morning / afternoon / evening / night)
       - Monitor-topic awareness (what the user is tracking)
       - Recent-session context  (last few turns of the current conversation)
       - Non-repetitive          (rotates context focus to avoid same opener)
-      - Smarter silence gate    (doesn't fire while Анфиса is speaking)
+      - Smarter silence gate    (doesn't fire while Anfisa is speaking)
 
     Defaults:
       min_silence_secs  — 900 s  (15 min) user must be silent before any check
@@ -41,7 +41,7 @@ class ProactiveEngine:
             and (now - self._last_triggered) >= self.check_cooldown
         )
 
-    def Анфиса_triggered(self) -> None:
+    def Anfisa_triggered(self) -> None:
         self._last_triggered = time.monotonic()
         self._rotation      += 1
 

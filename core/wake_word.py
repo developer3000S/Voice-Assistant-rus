@@ -1,5 +1,5 @@
 """
-Local wake-word detection for Анфиса ("Привет Анфиса").
+Local wake-word detection for Anfisa ("Привет Anfisa").
 
 Design goals:
   • ZERO cost when the feature is off — openwakeword is imported ONLY inside
@@ -13,7 +13,7 @@ Design goals:
     network call except the one-time model download the user triggers from the UI.
 
 openwakeword ships small ONNX models (a few MB each) and runs comfortably on a
-CPU. The pretrained wake phrase used here is "Привет Анфиса".
+CPU. The pretrained wake phrase used here is "Привет Anfisa".
 """
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ import threading
 from pathlib import Path
 from typing import Callable
 
-# Pretrained openwakeword model that listens for "Привет Анфиса".
+# Pretrained openwakeword model that listens for "Привет Anfisa".
 WAKE_MODEL = "hey_Anfisa"
 # Score in [0,1]; above this counts as a detection. Tunable per environment.
 DEFAULT_THRESHOLD = 0.5
@@ -137,7 +137,7 @@ class WakeWordDetector:
         self._ready = True
         self._thread = threading.Thread(target=self._loop, daemon=True, name="WakeWordThread")
         self._thread.start()
-        self._logger("Wake word: listening for 'Привет Анфиса'.")
+        self._logger("Wake word: listening for 'Привет Anfisa'.")
         return True
 
     def stop(self) -> None:
@@ -178,9 +178,9 @@ class WakeWordDetector:
                 scores = self._model.predict(np.asarray(frame, dtype=np.int16))
                 score = 0.0
                 if isinstance(scores, dict):
-                    # match the Анфиса model regardless of exact key suffix
+                    # match the Anfisa model regardless of exact key suffix
                     for k, v in scores.items():
-                        if "Анфиса" in k.lower():
+                        if "Anfisa" in k.lower():
                             score = max(score, float(v))
                     if score == 0.0 and scores:
                         score = max(float(v) for v in scores.values())

@@ -1,5 +1,5 @@
 """
-file_processor.py — Анфиса Universal File Processor
+file_processor.py — Anfisa Universal File Processor
 
 Supported types:
   image   → describe, ocr, resize, convert, compress, crop

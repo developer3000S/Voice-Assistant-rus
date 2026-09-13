@@ -55,7 +55,7 @@ def _resolve_save_path(output_path: str, language: str) -> Path:
         p = Path(output_path)
         return p if p.is_absolute() else DESKTOP / p
     ext = ext_map.get((language or "python").lower(), ".py")
-    return DESKTOP / f"Анфиса_code{ext}"
+    return DESKTOP / f"Anfisa_code{ext}"
 
 
 def _read_file(file_path: str) -> tuple[str, str]:
@@ -95,7 +95,7 @@ def _has_error(output: str) -> bool:
 def _take_screenshot() -> Path | None:
     try:
         import pyautogui
-        screenshot_path = Path.home() / "Desktop" / f"Анфиса_debug_{int(time.time())}.png"
+        screenshot_path = Path.home() / "Desktop" / f"Anfisa_debug_{int(time.time())}.png"
         screenshot = pyautogui.screenshot()
         screenshot.save(str(screenshot_path))
         print(f"[Code] 📸 Screenshot: {screenshot_path}")
@@ -167,7 +167,7 @@ def _write(description: str, language: str, output_path: str, player=None) -> tu
 Write clean, working, well-commented {lang} code for the description below.
 
 Rules:
-- Output ONLY the code. No explanation, no Анфисаdown, no backticks.
+- Output ONLY the code. No explanation, no Anfisadown, no backticks.
 - Add helpful inline comments.
 - Handle errors and edge cases properly.
 - Use modern best practices.
@@ -187,7 +187,7 @@ def _fix_code(code: str, error_output: str, description: str) -> str:
     model  = _get_gemini()
     prompt = f"""You are an expert debugger.
 The code below failed with the following error. Fix it.
-Return ONLY the corrected code — no explanation, no Анфисаdown, no backticks.
+Return ONLY the corrected code — no explanation, no Anfisadown, no backticks.
 
 Original goal: {description}
 
@@ -321,7 +321,7 @@ def _edit_action(file_path, instruction, player) -> str:
     model  = _get_gemini()
     prompt = f"""You are an expert code editor.
 Apply the following change to the code below.
-Return ONLY the complete updated code — no explanation, no Анфисаdown, no backticks.
+Return ONLY the complete updated code — no explanation, no Anfisadown, no backticks.
 
 Change: {instruction}
 
@@ -402,7 +402,7 @@ Optimize the following code for:
 3. Best practices — modern {lang} patterns, error handling, type hints if applicable
 4. Remove dead code, redundant comments, and unnecessary complexity
 
-Return ONLY the optimized code — no explanation, no Анфисаdown, no backticks.
+Return ONLY the optimized code — no explanation, no Anfisadown, no backticks.
 
 Original code:
 {code[:6000]}

@@ -109,7 +109,7 @@ def _plan_project(description: str, language: str) -> dict:
 Language: {language}
 Description: {description}
 
-Return ONLY valid JSON — no Анфисаdown, no explanation:
+Return ONLY valid JSON — no Anfisadown, no explanation:
 {{
   "project_name": "snake_case_name",
   "entry_point": "main.py",
@@ -209,7 +209,7 @@ Purpose of this file: {file_desc}
 {lang_rules}
 
 General rules:
-- Output ONLY raw code. Absolutely no explanation, no Анфисаdown, no triple backticks.
+- Output ONLY raw code. Absolutely no explanation, no Anfisadown, no triple backticks.
 - Write COMPLETE, RUNNABLE code — no placeholders, no "# TODO", no "pass" stubs.
 - Every import must either be from the standard library, listed dependencies, or the project files shown above.
 - Match import paths EXACTLY to the file paths in the project structure (e.g. if file is "utils/helpers.py", import as "from utils.helpers import ...").
@@ -408,7 +408,7 @@ Current (broken) code:
 {current_code}
 
 Rules:
-- Output ONLY the complete fixed code. No explanation, no Анфисаdown, no backticks.
+- Output ONLY the complete fixed code. No explanation, no Anfisadown, no backticks.
 - Fix ALL errors visible in the error output.
 - Keep all existing correct logic — do not remove working features.
 - Ensure import paths match the actual project file structure exactly.
@@ -460,7 +460,7 @@ def _build_project(
         if speak: speak(msg)
         return msg
 
-    proj_name    = project_name or plan.get("project_name", "Анфиса_project")
+    proj_name    = project_name or plan.get("project_name", "Anfisa_project")
     proj_name    = re.sub(r"[^\w\-]", "_", proj_name)
     project_dir  = PROJECTS_DIR / proj_name
     project_dir.mkdir(parents=True, exist_ok=True)

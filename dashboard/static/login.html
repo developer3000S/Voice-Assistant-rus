@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Анфиса</title>
+  <title>Anfisa</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -137,7 +137,7 @@
     <div class="logo"><em>J</em>ARVIS</div>
     <div class="sub">Remote Access</div>
     <p id="reconnecting">Reconnecting…</p>
-    <p class="hint">Press <strong style="color:var(--text)">Remote Control</strong> in the Анфиса desktop app to get a QR code or session key.</p>
+    <p class="hint">Press <strong style="color:var(--text)">Remote Control</strong> in the Anfisa desktop app to get a QR code or session key.</p>
     <div class="key-wrap">
       <input class="key-input" id="key" type="text" maxlength="6"
              autocomplete="off" autocorrect="off" spellcheck="false"
@@ -148,14 +148,14 @@
     <p class="voice-note">
       🎤 <strong style="color:var(--text)">Voice commands:</strong> open
       <code>chrome://flags</code> on your phone, search
-      <code>Insecure origins treated as secure</code>, add your Анфиса URL, tap Relaunch.
+      <code>Insecure origins treated as secure</code>, add your Anfisa URL, tap Relaunch.
     </p>
   </div>
 
   <script>
     // Try auto-reconnect with stored device token (set on first QR login)
     (async function() {
-      const devTok = localStorage.getItem('Анфиса_device_token');
+      const devTok = localStorage.getItem('Anfisa_device_token');
       if (!devTok) return;
       document.getElementById('reconnecting').style.display = 'block';
       try {
@@ -166,14 +166,14 @@
         });
         const d = await r.json();
         if (d.ok && d.token) {
-          sessionStorage.setItem('Анфиса_key', d.key);
-          sessionStorage.setItem('Анфиса_token', d.token);
+          sessionStorage.setItem('Anfisa_key', d.key);
+          sessionStorage.setItem('Anfisa_token', d.token);
           location.replace('/');
           return;
         }
       } catch (_) {}
       // Device token rejected (server restarted) — clear it and show normal form
-      localStorage.removeItem('Анфиса_device_token');
+      localStorage.removeItem('Anfisa_device_token');
       document.getElementById('reconnecting').style.display = 'none';
     })();
 
@@ -202,8 +202,8 @@
         shake(); return;
       }
       if (data.ok && data.token) {
-        sessionStorage.setItem('Анфиса_key', key);
-        sessionStorage.setItem('Анфиса_token', data.token);
+        sessionStorage.setItem('Anfisa_key', key);
+        sessionStorage.setItem('Anfisa_token', data.token);
         location.href = '/';
       } else {
         inp.value = '';
