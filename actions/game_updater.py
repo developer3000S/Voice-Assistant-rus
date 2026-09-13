@@ -860,12 +860,12 @@ def _schedule_mac(hour: int, minute: int) -> str:
 
 def _schedule_linux(hour: int, minute: int) -> str:
     script_path = Path(__file__).resolve()
-    Anfisaer      = "# Anfisa_GameUpdater"
-    cron_entry  = f"{minute} {hour} * * * {sys.executable} {script_path} --scheduled  {Anfisaer}"
+    marker      = "# Anfisa_GameUpdater"
+    cron_entry  = f"{minute} {hour} * * * {sys.executable} {script_path} --scheduled  {marker}"
     try:
         existing = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
         lines    = [l for l in existing.stdout.splitlines()
-                    if Anfisaer not in l and str(script_path) not in l]
+                    if marker not in l and str(script_path) not in l]
         lines.append(cron_entry)
         proc = subprocess.run(["crontab", "-"],
                               input="\n".join(lines) + "\n",

@@ -1440,7 +1440,7 @@ class AnfisaLive:
             if not self._proactive.should_trigger(self._last_user_speech):
                 continue
 
-            self._proactive.Anfisa_triggered()
+            self._proactive.mark_triggered()
 
             try:
                 memory       = await asyncio.to_thread(load_memory)

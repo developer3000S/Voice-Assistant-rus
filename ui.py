@@ -626,7 +626,7 @@ class HudCanvas(QWidget):
         p.setPen(QPen(qcol(C.ACC, sa // 2), 1.5))
         p.drawArc(srect, int(self._scan2 * 16), int(ex * 16))
 
-        # tick Anfisas
+        # tick marks
         t_out, t_in = fw * 0.497, fw * 0.474
         p.setPen(QPen(qcol(C.PRI, 140), 1))
         for deg in range(0, 360, 10):
@@ -2680,7 +2680,7 @@ class RemoteKeyOverlay(QWidget):
         if remaining == 0:
             self._do_close()
 
-    def Anfisa_connected(self) -> None:
+    def mark_connected(self) -> None:
         """Call from any thread when a phone successfully connects."""
         self._ctimer.stop()
         self._key_lbl.setText("CONNECTED")
@@ -3051,7 +3051,7 @@ class MainWindow(QMainWindow):
                 y2 = cy + int(R_outer * math.sin(angle))
                 d.line([x1, y1, x2, y2], fill=(*GLOW, 200), width=spoke_w)
 
-            # ── 6 tick Anfisas on outer ring ────────────────────────────────
+            # ── 6 tick marks on outer ring ────────────────────────────────
             for i in range(6):
                 angle = math.radians(i * 60)
                 for dr in range(lw * 2):
@@ -3241,7 +3241,7 @@ class MainWindow(QMainWindow):
         desktop = self._get_desktop_dir()
 
         # Arc-reactor icon (.ico — also exported as .png for Linux/macOS)
-        ico_path = Path(__file__).resolve().parent / "config" / "Anfisa.ico"
+        ico_path = Path(__file__).resolve().parent / "config" / "anfisa.ico"
         if not ico_path.exists():
             self._build_Anfisa_icon(ico_path)
 
@@ -3975,7 +3975,7 @@ class MainWindow(QMainWindow):
 
     def notify_phone_connected(self) -> None:
         if self._remote_overlay and self._remote_overlay.isVisible():
-            self._remote_overlay.Anfisa_connected()
+            self._remote_overlay.mark_connected()
 
     def _open_remote(self):
         if not self.on_remote_clicked:

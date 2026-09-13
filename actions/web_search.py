@@ -229,7 +229,7 @@ def _research(query: str) -> str:
 
 
 def _price(query: str) -> str:
-    """Product price lookup — searches for current Anfisaet prices."""
+    """Product price lookup — searches for current market prices."""
     price_query = f"current price of {query} — how much does it cost today"
     try:
         return _gemini_search(price_query)
