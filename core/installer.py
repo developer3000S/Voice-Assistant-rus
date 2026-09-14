@@ -65,6 +65,23 @@ def _available(module: str) -> bool:
     return importlib.util.find_spec(module) is not None
 
 
+def _playwright_spec() -> str:
+    """
+    Playwright 1.58 убрал сборки chromium/webkit для macOS 13 и старше, поэтому
+    там нужен 1.57.0 — иначе `playwright install chromium` падает с
+    "Playwright does not support chromium on mac13".
+    """
+    if platform.system() == "Darwin":
+        # Darwin kernel 22.x = macOS 13, 21.x = macOS 12, и т.д.
+        try:
+            kernel_major = int(platform.release().split(".")[0])
+        except (ValueError, IndexError):
+            kernel_major = 0
+        if kernel_major and kernel_major < 23:
+            return "playwright<1.58"
+    return "playwright"
+
+
 def _pip(package: str, log: Callable | None = None) -> bool:
     if log:
         log(f"SYS: pip install {package} …")
@@ -124,7 +141,7 @@ def install_for_config(config: dict, log: Callable | None = None) -> None:
 
     # Playwright: поставить пакет + скачать браузер Chromium
     if not _available("playwright"):
-        _pip("playwright", log)
+        _pip(_playwright_spec(), log)
         if log:
             log("SYS: Скачиваю браузер Playwright (Chromium, ~150 МБ — один раз)…")
         subprocess.run(

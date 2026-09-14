@@ -30,10 +30,12 @@ def main() -> None:
     _run("Установка Python-зависимостей (OS-специфичные отсеиваются автоматически)…",
          [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
 
-    # Chromium покрывает Chrome/Edge/Opera/Brave/Vivaldi; Firefox — для Firefox.
-    # (Автоматизации Safari дополнительно нужно: python -m playwright install webkit)
-    _run("Установка браузеров Playwright (chromium + firefox)…",
-         [sys.executable, "-m", "playwright", "install", "chromium", "firefox"])
+    # Установка браузеров Playwright (chromium).
+    # На macOS 13 (kernel < 23) requirements.txt ставит playwright==1.57.0 —
+    # последнюю версию с поддержкой chromium/webkit для этой ОС.
+    # Firefox на mac13 в 1.57 тоже есть, но для веб-автоматизации достаточно chromium.
+    _run("Установка браузеров Playwright (chromium)…",
+         [sys.executable, "-m", "playwright", "install", "chromium"])
 
     # ── Заметки по пост-установке для каждой ОС ───────────────────────────────
     if OS == "Windows":
