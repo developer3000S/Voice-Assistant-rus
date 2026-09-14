@@ -1,11 +1,12 @@
 """
-dashboard/server.py — Anfisa Local HTTP Dashboard
+dashboard/server.py — локальный HTTP-дашборд Анфисы
 
-Plain HTTP on port 8000 (no SSL warnings, no firewall issues).
-Security at the application layer: AES-256-CBC with session-key-derived key.
-CryptoJS is auto-downloaded once and served locally — no CDN needed after that.
+Обычный HTTP на порту 8000 (без предупреждений про SSL и проблем с фаерволом).
+Защита на уровне приложения: AES-256-CBC с ключом, производным от ключа сессии.
+CryptoJS скачивается один раз автоматически и отдаётся локально — после этого CDN
+не нужен.
 
-Install deps:  pip install fastapi "uvicorn[standard]" cryptography
+Установка зависимостей:  pip install fastapi "uvicorn[standard]" cryptography
 """
 
 import asyncio
@@ -27,7 +28,7 @@ try:
 except ImportError:
     pass
 
-# python-multipart is required for file uploads — optional dependency
+# python-multipart нужен для загрузки файлов — зависимость опциональная
 _UPLOAD_OK = False
 try:
     from fastapi import UploadFile, File as FastAPIFile
@@ -42,7 +43,7 @@ MAX_UPLOAD_MB = 500
 
 
 def _make_uploads_dir() -> Path:
-    """Return (and create) the cross-platform uploads folder."""
+    """Возвращает (и создаёт) кроссплатформенную папку для загруженных файлов."""
     for candidate in [
         Path.home() / "Downloads" / "Anfisa Uploads",
         Path.home() / "Documents" / "Anfisa Uploads",
@@ -74,12 +75,12 @@ _AES_SALT = b'Anfisa-DASHBOARD-v1'
 
 
 def _derive_key(session_key: str) -> bytes:
-    """SHA-256(sessionKey‖salt) → 32-byte AES-256 key (microseconds, no PBKDF2 needed)."""
+    """SHA-256(sessionKey‖salt) → 32-байтный ключ AES-256 (микросекунды, PBKDF2 не нужен)."""
     return hashlib.sha256(session_key.encode('utf-8') + _AES_SALT).digest()
 
 
 def _decrypt_cbc(aes_key: bytes, enc_b64: str) -> str:
-    """Decrypt base64(IV[16] ‖ ciphertext) with AES-256-CBC + PKCS7."""
+    """Расшифровывает base64(IV[16] ‖ ciphertext) в AES-256-CBC + PKCS7."""
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     from cryptography.hazmat.primitives import padding as sym_pad
     raw      = base64.b64decode(enc_b64)
@@ -90,21 +91,22 @@ def _decrypt_cbc(aes_key: bytes, enc_b64: str) -> str:
     return (unpadder.update(padded) + unpadder.finalize()).decode('utf-8')
 
 
-# ── CryptoJS (auto-download once, served locally) ─────────────────────────────
+# ── CryptoJS (скачивается один раз, отдаётся локально) ────────────────────────
 _CRYPTOJS_CDN  = ("https://cdnjs.cloudflare.com/ajax/libs/"
                   "crypto-js/4.2.0/crypto-js.min.js")
 _CRYPTOJS_FILE = STATIC_DIR / "crypto-js.min.js"
 
 
 def _ensure_network_access(port: int) -> None:
-    """Cross-platform, best-effort: open port in the OS firewall for LAN access.
+    """Кроссплатформенно и по возможности: открывает порт в фаерволе ОС для доступа из локальной сети.
 
-    Runs in a background thread — never blocks uvicorn startup.
+    Выполняется в фоновом потоке — никогда не блокирует запуск uvicorn.
 
-    Windows : writes a .bat file, runs it elevated via Windows ShellExecuteW
-              (native UAC dialog, guaranteed to appear). One-time setup.
-    macOS   : osascript admin dialog if the Application Firewall is on.
-    Linux   : pkexec GUI → sudo -n → prints manual command as fallback.
+    Windows : пишет .bat-файл и запускает его с правами администратора через
+              Windows ShellExecuteW (родной диалог UAC, появляется гарантированно).
+              Одноразовая настройка.
+    macOS   : диалог osascript admin, если прикладной фаервол включён.
+    Linux   : pkexec с GUI → sudo -n → в качестве запасного варианта печатает команду вручную.
     """
     import sys, subprocess, os, tempfile, threading
 
@@ -144,9 +146,9 @@ def _ensure_network_access(port: int) -> None:
         need_private = _network_is_public()
 
         if not need_port and not need_prog and not need_private:
-            return  # already fully configured
+            return  # уже полностью настроено
 
-        # Build a .bat file — netsh + powershell, runs fast when elevated
+        # Собираем .bat-файл — netsh + powershell, с правами администратора летает
         bat_lines = ["@echo off"]
         if need_private:
             bat_lines.append(
@@ -171,7 +173,7 @@ def _ensure_network_access(port: int) -> None:
         bat_body = "\r\n".join(bat_lines) + "\r\n"
         fd, bat_path = tempfile.mkstemp(suffix=".bat", prefix="Anfisa_fw_")
         try:
-            os.write(fd, bat_body.encode("mbcs"))   # Windows cmd.exe expects ANSI
+            os.write(fd, bat_body.encode("mbcs"))   # cmd.exe в Windows ждёт ANSI
             os.close(fd)
         except Exception:
             try:
@@ -180,7 +182,7 @@ def _ensure_network_access(port: int) -> None:
                 pass
             return
 
-        # ── Try running directly (succeeds when already admin) ────────────────
+        # ── Попытка запустить напрямую (срабатывает, если уже админ) ──────────
         try:
             r = subprocess.run(
                 [bat_path], capture_output=True, timeout=8, shell=True
@@ -195,33 +197,33 @@ def _ensure_network_access(port: int) -> None:
         except Exception:
             pass
 
-        # ── ShellExecuteW: native UAC elevation (most reliable on Windows) ────
-        # ShellExecuteW with verb "runas" always shows the UAC dialog regardless
-        # of UAC level settings. Non-blocking — uvicorn is already running.
-        print("[Dashboard] One-time network setup required.")
-        print("[Dashboard] >>> A Windows security dialog will appear — click 'Yes' <<<")
+        # ── ShellExecuteW: повышение через UAC (надёжнее всего в Windows) ─────
+        # ShellExecuteW с глаголом "runas" показывает диалог UAC всегда, независимо
+        # от настроек уровня UAC. Не блокирует работу — uvicorn уже запущен.
+        print("[Dashboard] Требуется одноразовая настройка сети.")
+        print("[Dashboard] >>> Появится диалог безопасности Windows — нажмите «Да» <<<")
         try:
             ret = ctypes.windll.shell32.ShellExecuteW(
-                None,       # hwnd  (no parent window)
-                "runas",    # verb  (request elevation)
-                bat_path,   # file  (our .bat)
+                None,       # hwnd  (без родительского окна)
+                "runas",    # verb  (запрос прав администратора)
+                bat_path,   # file  (наш .bat)
                 None,       # params
                 None,       # working dir
-                0,          # SW_HIDE (run without a visible cmd window)
+                0,          # SW_HIDE (запустить без видимого окна cmd)
             )
             if int(ret) > 32:
-                # ShellExecuteW returns immediately; bat finishes in ~1 second.
-                # Sleep briefly so the rules are in place before the first retry.
+                # ShellExecuteW возвращается сразу; .bat отрабатывает примерно за секунду.
+                # Небольшая пауза, чтобы правила успели примениться до первой повторной попытки.
                 time.sleep(2)
-                print(f"[Dashboard] Network setup complete — port {port} is open.")
-                print("[Dashboard] Refresh your phone browser to connect.")
+                print(f"[Dashboard] Настройка сети завершена — порт {port} открыт.")
+                print("[Dashboard] Обновите браузер на телефоне, чтобы подключиться.")
             else:
-                print("[Dashboard] Setup was not allowed.")
-                print("[Dashboard] Phone connections may fail until Anfisa is run as Administrator.")
+                print("[Dashboard] Настройка не разрешена.")
+                print("[Dashboard] Подключения с телефона могут не работать, пока Анфиса не запущена от имени администратора.")
         except Exception as e:
-            print(f"[Dashboard] Firewall setup error: {e}")
+            print(f"[Dashboard] Ошибка настройки фаервола: {e}")
         finally:
-            # Cleanup after the bat has had time to run
+            # Убираем за собой, когда .bat успеет отработığı
             def _cleanup(path: str) -> None:
                 time.sleep(5)
                 try:

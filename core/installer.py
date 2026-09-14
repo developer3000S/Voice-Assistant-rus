@@ -1,8 +1,8 @@
 """
-Anfisa XL — Dependency auto-installer.
+Anfisa XL — автоустановщик зависимостей.
 
-Called automatically on first launch and after engine reconfiguration.
-Installs only the packages that are actually missing, then exits cleanly.
+Вызывается автоматически при первом запуске и после перенастройки движков.
+Ставит только те пакеты, которых действительно нет, после чего корректно завершается.
 """
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ import subprocess
 import sys
 from typing import Callable
 
-# ── Package lists ─────────────────────────────────────────────────────────
-# Each entry: (import_name, pip_package_name)
+# ── Списки пакетов ────────────────────────────────────────────────────────
+# Каждая запись: (import_name, pip_package_name)
 
 _CORE: list[tuple[str, str]] = [
     ("psutil",             "psutil"),
@@ -35,7 +35,7 @@ _CORE: list[tuple[str, str]] = [
     ("youtube_transcript_api", "youtube-transcript-api"),
 ]
 
-# Windows-only (pywinauto, pycaw, win10toast, comtypes)
+# Только Windows (pywinauto, pycaw, win10toast, comtypes)
 _WINDOWS: list[tuple[str, str]] = [
     ("comtypes",   "comtypes"),
     ("pycaw",      "pycaw"),
@@ -43,25 +43,25 @@ _WINDOWS: list[tuple[str, str]] = [
     ("pywinauto",  "pywinauto"),
 ]
 
-# STT engine packages
+# Пакеты движков распознавания речи (STT)
 _STT: dict[str, list[tuple[str, str]]] = {
     "whisper": [("faster_whisper", "faster-whisper")],
     "vosk":    [("vosk",           "vosk")],
 }
 
-# TTS engine packages
+# Пакеты движков озвучки (TTS)
 _TTS: dict[str, list[tuple[str, str]]] = {
     "edgetts":    [("edge_tts", "edge-tts")],
-    # kokoro>=0.9 dropped AlbertModel/AutoModel from transformers — version pin is critical
+    # kokoro>=0.9 убрал AlbertModel/AutoModel из transformers — пин версии критичен
     "kokoro":     [("kokoro",   "kokoro>=0.9"), ("soundfile", "soundfile")],
-    "elevenlabs": [],   # uses only requests, already in core
+    "elevenlabs": [],   # используется только requests, он уже в core
 }
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────
+# ── Вспомогательные функции ───────────────────────────────────────────────
 
 def _available(module: str) -> bool:
-    """Return True if the module can be imported (no actual import)."""
+    """True, если модуль можно импортировать (самого импорта не происходит)."""
     return importlib.util.find_spec(module) is not None
 
 
@@ -78,18 +78,18 @@ def _pip(package: str, log: Callable | None = None) -> bool:
     ok = result.returncode == 0
     if not ok and log:
         stderr = result.stderr.decode(errors="replace").strip()
-        log(f"ERR: {package} install failed — {stderr[:140]}")
+        log(f"ERR: не удалось установить {package} — {stderr[:140]}")
     return ok
 
 
-# ── Public API ────────────────────────────────────────────────────────────
+# ── Публичный API ─────────────────────────────────────────────────────────
 
 def install_for_config(config: dict, log: Callable | None = None) -> None:
     """
-    Install all missing packages required by *config*.
+    Установить все отсутствующие пакеты, которые требует *config*.
 
-    Blocking — always call from a background thread.
-    Progress is reported via the optional *log* callback (receives a str).
+    Блокирующий — всегда вызывать из фонового потока.
+    Прогресс сообщается через необязательный колбэк *log (получает str).
     """
     stt = config.get("stt_engine", "whisper").lower()
     tts = config.get("tts_engine", "edgetts").lower()
@@ -100,7 +100,7 @@ def install_for_config(config: dict, log: Callable | None = None) -> None:
     if platform.system() == "Windows":
         needed += _WINDOWS
 
-    # Deduplicate (preserve order, key = pip name)
+    # Дедупликация (порядок сохраняется, ключ = имя pip)
     seen: set[str] = set()
     unique: list[tuple[str, str]] = []
     for mod, pkg in needed:
@@ -112,27 +112,27 @@ def install_for_config(config: dict, log: Callable | None = None) -> None:
 
     if not missing:
         if log:
-            log("SYS: All dependencies already installed ✓")
+            log("SYS: Все зависимости уже установлены ✓")
         return
 
     pkg_names = ", ".join(p for _, p in missing)
     if log:
-        log(f"SYS: Installing {len(missing)} package(s): {pkg_names}")
+        log(f"SYS: Устанавливаю {len(missing)} пакет(ов): {pkg_names}")
 
     for _mod, pkg in missing:
         _pip(pkg, log)
 
-    # Playwright: install the package + download Chromium browser
+    # Playwright: поставить пакет + скачать браузер Chromium
     if not _available("playwright"):
         _pip("playwright", log)
         if log:
-            log("SYS: Downloading Playwright browser (Chromium, ~150 MB — one-time)…")
+            log("SYS: Скачиваю браузер Playwright (Chromium, ~150 МБ — один раз)…")
         subprocess.run(
             [sys.executable, "-m", "playwright", "install", "chromium"],
             capture_output=True,
         )
         if log:
-            log("SYS: Playwright browser ready.")
+            log("SYS: Браузер Playwright готов.")
 
     if log:
-        log("SYS: All dependencies ready ✓")
+        log("SYS: Все зависимости готовы ✓")

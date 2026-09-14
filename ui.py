@@ -33,12 +33,12 @@ from PyQt6.QtWidgets import (
     QStackedWidget, QTextEdit, QVBoxLayout, QWidget, QProgressBar,
 )
 
-# ── Which Anfisa this is ───────────────────────────────────────────────────────
-# One constant, read by the window title, the header badge and the PROTOCOL
-# panel. It used to be typed separately in each of those places, and they drifted:
-# Anfisa 52 and 53 shipped showing "PROTOCOL XLIX" — the number from Anfisa 49 — and
-# Anfisa 55 shipped titled "Anfisa 54". Deriving the protocol from the name means a
-# release bump is this one line.
+# ── Какая это «Анфиса» ────────────────────────────────────────────────────────
+# Одна константа, которую читают заголовок окна, значок в шапке и панель PROTOCOL.
+# Раньше её вписывали в каждое место отдельно, и значения разъехались: «Анфиса» 52
+# и 53 выходили с надписью "PROTOCOL XLIX" — числом от «Анфисы» 49 — а «Анфиса» 55
+# шла с заголовком "Anfisa 54". Теперь протокол выводится из названия, и выпуск
+# новой версии — это одна эта строка.
 APP_VERSION  = "Voice Assistant"
 APP_PROTOCOL = APP_VERSION.split()[-1]
 
@@ -53,7 +53,7 @@ API_FILE   = CONFIG_DIR / "api_keys.json"
 
 
 def _read_full_config() -> dict:
-    """Read api_keys.json config dict. Returns {} on any error."""
+    """Читает dict настроек api_keys.json. При любой ошибке возвращает {}."""
     try:
         return json.loads(API_FILE.read_text(encoding="utf-8"))
     except Exception:
@@ -92,7 +92,7 @@ class C:
     BAR_BG    = "#011520"
 
 
-# Keys tied to the accent colour — status colours (ACC, GREEN, RED…) stay fixed
+# Ключи, привязанные к акцентному цвету — статусные (ACC, GREEN, RED…) остаются фиксированными
 _HUE_LINKED = (
     "BG", "PANEL", "PANEL2", "BORDER", "BORDER_B", "BORDER_A",
     "PRI", "PRI_DIM", "PRI_GHO", "TEXT", "TEXT_DIM", "TEXT_MED",
@@ -105,10 +105,10 @@ DEFAULT_UI_COLOR = _PALETTE_DEFAULTS["PRI"]
 
 def apply_ui_accent(accent_hex: str) -> bool:
     """
-    Re-derives the whole teal-family palette from the chosen accent colour
-    (hue shift — brightness/saturation ratios are preserved, design stays intact).
-    Painted elements (HUD, waveform, metrics) pick up the new colour on the next
-    frame; stylesheet-based panels pick it up when they are rebuilt.
+    Заново выводит всю бирюзовую палитру из выбранного акцентного цвета
+    (сдвиг оттенка — пропорции яркости и насыщенности сохраняются, композиция
+    не ломается). Отрисованные элементы (HUD, волна, метрики) берут новый цвет
+    на следующем кадре; панели на таблицах стилей — при перестроении.
     """
     import colorsys
 
@@ -129,7 +129,7 @@ def apply_ui_accent(accent_hex: str) -> bool:
     base_h            = _hsv(_PALETTE_DEFAULTS["PRI"])[0]
     acc_h, acc_s, _av = _hsv(accent_hex)
     dh   = acc_h - base_h
-    grey = acc_s < 0.08   # near-grey accent → the whole theme is desaturated
+    grey = acc_s < 0.08   # почти серый акцент → вся тема обесцвечена
 
     for key, hex0 in _PALETTE_DEFAULTS.items():
         h, s, v = _hsv(hex0)
@@ -142,16 +142,16 @@ def apply_ui_accent(accent_hex: str) -> bool:
 
 
 def current_palette() -> dict[str, str]:
-    """A snapshot of the accent-linked colours currently on class C."""
+    """Снимок цветов, привязанных к акценту и стоящих сейчас в классе C."""
     return {k: getattr(C, k) for k in _HUE_LINKED}
 
 
 def retheme_all_widgets(old: dict[str, str], new: dict[str, str]) -> None:
     """
-    LIVE full theme change. Replaces the old palette colours with the new ones
-    in EVERY widget's stylesheet across the app and repaints them. This way the
-    colour change applies INSTANTLY across the whole interface — panels, buttons,
-    borders included — not just the painted elements. No restart needed.
+    ПОЛНАЯ смена темы на лету. Заменяет цвета старой палитры на новые
+    в таблице стилей КАЖДОГО виджета приложения и перерисовывает их. Так смена
+    цвета применяется МГНОВЕННО ко всему интерфейсу — панелям, кнопкам, рамкам
+    включительно, — а не только к отрисованным элементам. Перезапуск не нужен.
     """
     mapping = {old[k].lower(): new[k].lower()
                for k in old if old[k].lower() != new.get(k, old[k]).lower()}
@@ -179,13 +179,13 @@ def qcol(h: str, a: int = 255) -> QColor:
     c = QColor(h); c.setAlpha(a); return c
 
 
-# ── Windows GPU via NVML DLL (no subprocess, no console window) ──────────────
-_nvml_lib: object = None   # cached ctypes DLL
-_nvml_ok:  object = None   # None=untested, True=works, False=unavailable
+# ── Windows GPU через NVML DLL (без подпроцесса, без окна консоли) ────────────
+_nvml_lib: object = None   # кэшированный ctypes DLL
+_nvml_ok:  object = None   # None=не проверяли, True=работает, False=недоступен
 
 
 def _nvml_gpu_windows() -> float:
-    """Return NVIDIA GPU utilisation % using nvml.dll directly — zero subprocess."""
+    """Возвращает загрузку NVIDIA GPU в % напрямую через nvml.dll — ноль подпроцессов."""
     global _nvml_lib, _nvml_ok
     if _nvml_ok is False:
         return -1.0
@@ -234,16 +234,16 @@ class _SysMetrics:
         self._last_net = psutil.net_io_counters()
         self._last_net_t = time.time()
         self._running = True
-        # Probe caches — GPU (NVML) and temperature (WMI) are the expensive
-        # queries; initialise their handles once and reuse them instead of
-        # rebuilding a connection on every poll.
-        self._slow_tick = 0            # gpu/temp refreshed every 3rd cycle
-        self._pynvml    = None         # cached pynvml module + device handle
+        # Кэши зондов — GPU (NVML) и температура (WMI) самые дорогие
+        # запросы; их дескрипторы инициализируем один раз и переиспользуем
+        # вместо нового подключения на каждом опросе.
+        self._slow_tick = 0            # gpu/temp обновляются каждые 3 цикла
+        self._pynvml    = None         # кэшированный модуль pynvml + дескриптор устройства
         self._pynvml_h  = None
-        self._pynvml_ok = None         # None=untested, False=unavailable here
-        self._nv_unix   = None         # cached (lib, dev) for Linux/macOS NVML
-        self._wmi_conn  = None         # cached WMI connection (creating one is slow)
-        self._wmi_ok    = None         # None=untested, False=unavailable here
+        self._pynvml_ok = None         # None=не проверяли, False=здесь недоступно
+        self._nv_unix   = None         # кэшированная пара (lib, dev) для NVML на Linux/macOS
+        self._wmi_conn  = None         # кэшированное WMI-подключение (создавать его медленно)
+        self._wmi_ok    = None         # None=не проверяли, False=здесь недоступно
         t = threading.Thread(target=self._loop, daemon=True)
         t.start()
 
@@ -271,9 +271,9 @@ class _SysMetrics:
         self._last_net   = nc
         self._last_net_t = now
 
-        # GPU and temperature change slowly and are the most expensive probes
-        # (NVML / WMI) — refresh them every 3rd cycle (~6 s) instead of every
-        # cycle, reusing the previous reading in between.
+        # GPU и температура меняются медленно и это самые дорогие зонды
+        # (NVML / WMI) — обновляем их каждые 3 цикла (~6 с) вместо каждого,
+        # в промежутке переиспользуя предыдущее значение.
         self._slow_tick = (self._slow_tick + 1) % 3
         if self._slow_tick == 1:
             gpu = self._get_gpu()
@@ -290,9 +290,9 @@ class _SysMetrics:
             self.tmp = tmp
 
     def _get_gpu(self) -> float:
-        # pynvml — subprocess-free; initialise once and reuse the handle.
-        # Re-initialising NVML on every poll is slow, so cache it and stop
-        # retrying pynvml entirely once it proves unavailable here.
+        # pynvml — без подпроцессов; инициализация один раз и переиспользование дескриптора.
+        # Переинициализировать NVML на каждом опросе медленно, поэтому кэшируем
+        # и перестаём пробовать pynvml вовсе, как только он здесь показал недоступность.
         if self._pynvml_ok is not False:
             try:
                 if self._pynvml_h is None:
@@ -305,11 +305,11 @@ class _SysMetrics:
             except Exception:
                 self._pynvml_ok = False
 
-        # Windows: nvml.dll via ctypes (already cached in _nvml_gpu_windows)
+        # Windows: nvml.dll через ctypes (уже закэширован в _nvml_gpu_windows)
         if _OS == "Windows":
             return _nvml_gpu_windows()
 
-        # Linux / macOS: libnvidia-ml shared lib via ctypes — init once, reuse
+        # Linux / macOS: общая библиотека libnvidia-ml через ctypes — init один раз, дальше переиспользуем
         try:
             import ctypes
 
@@ -331,10 +331,10 @@ class _SysMetrics:
         except Exception:
             pass
 
-        return -1.0   # N/A — zero subprocess on all platforms
+        return -1.0   # N/A — на всех платформах без подпроцессов
 
     def _get_temp(self) -> float:
-        # psutil — works on Linux; occasionally Windows with driver support
+        # psutil — работает на Linux; изредка на Windows при поддержке драйвера
         try:
             temps = psutil.sensors_temperatures()
             for name in ["coretemp", "k10temp", "cpu_thermal", "acpitz",
@@ -347,9 +347,9 @@ class _SysMetrics:
         except Exception:
             pass
 
-        # Windows: wmi module (pure Python COM, zero subprocess). Reuse a single
-        # connection — building a fresh wmi.WMI() on every poll spins up a COM
-        # connection each time and is very slow. Give up after one failure.
+        # Windows: модуль wmi (чистый Python COM, ноль подпроцессов). Держим одно
+        # подключение — свежий wmi.WMI() на каждом опросе всякий раз заводит COM-соединение
+        # заново и это очень медленно. После первого же промаха сдаёмся.
         if _OS == "Windows" and self._wmi_ok is not False:
             try:
                 if self._wmi_conn is None:
@@ -362,7 +362,7 @@ class _SysMetrics:
                 self._wmi_ok   = False
                 self._wmi_conn = None
 
-        return -1.0   # N/A — zero subprocess on all platforms
+        return -1.0   # N/A — на всех платформах без подпроцессов
 
     def snapshot(self) -> dict:
         with self._lock:
@@ -403,23 +403,25 @@ class HudCanvas(QWidget):
         self._blink_tick = 0
         self._particles: list[list[float]] = []
         self._face_px: QPixmap | None = None
-        # Rescaled-face cache: the smooth rescale is expensive, so we keep the
-        # last result and only rebuild it when the (quantised) size changes.
+        # Кэш перемасштабированного лица: плавное изменение размера дорогое,
+        # поэтому держим последний результат и перестраиваем только когда
+        # (квантованный) размер меняется.
         self._face_cache: QPixmap | None = None
         self._face_cache_sz = -1
-        # Static grid-dot layer, pre-rendered once per size/theme into a pixmap
-        # so paintEvent blits it in one call instead of thousands of drawPoint()s.
+        # Слой статической сетки точек, заранее отрисованный по одному разу
+        # на размер/тему в pixmap, чтобы paintEvent вставлял его за один вызов
+        # вместо тысяч drawPoint().
         self._grid_cache: QPixmap | None = None
         self._grid_key = None
-        # Repaint throttle counter (idle frames drop to ~20 Hz — see _step()).
+        # Счётчик троттлинга перерисовки (простой падает до ~20 Гц — см. _step()).
         self._paint_tick = 0
         self._load_face(face_path)
 
-        # Live audio reactivity: _live_amp is written from the audio threads
-        # (0.0–1.0), _amp_disp is the smoothed value the paint code reads.
+        # Живая реакция на звук: _live_amp пишут потоки аудио
+        # (0.0–1.0), _amp_disp — сглаженное значение, которое читает код отрисовки.
         self._live_amp  = 0.0
         self._amp_disp  = 0.0
-        self._base_scale = 1.0    # slow "breathing" target; amp is added per-frame
+        self._base_scale = 1.0    # медленная цель «дыхания»; amp добавляется каждый кадр
         self._base_halo  = 55.0
 
         self._tmr = QTimer(self)
@@ -427,9 +429,9 @@ class HudCanvas(QWidget):
         self._tmr.start(16)
 
     def set_audio_level(self, level: float) -> None:
-        """Thread-safe entry point for the audio threads. Stores the louder of
-        the incoming level and the current value so brief gaps between chunks
-        don't make the waveform stutter; _step() decays it back down."""
+        """Потокобезопасная точка входа для потоков аудио. Хранит более громкое
+        из входящего уровня и текущего значения, чтобы короткие паузы между
+        чанками не заставляли волну спотыкаться; _step() плавно гасит её вниз."""
         try:
             lv = float(level)
         except (TypeError, ValueError):
@@ -457,14 +459,14 @@ class HudCanvas(QWidget):
             self._face_px = px
         except Exception:
             self._face_px = None
-        # New source image → drop the rescaled cache so it rebuilds on next paint.
+        # Новая исходная картинка → сбрасываем кэш масштаба, чтобы он перестроился на следующей отрисовке.
         self._face_cache    = None
         self._face_cache_sz = -1
 
     def _make_grid(self, W: int, H: int) -> QPixmap:
-        """Pre-render the static grid-dot background into a transparent pixmap so
-        paintEvent can blit it once per frame instead of running a nested
-        drawPoint() loop across the whole widget every 16 ms."""
+        """Заранее рисует статический фон из сетки точек в прозрачный pixmap, чтобы
+        paintEvent вставлял его раз за кадр вместо вложенного цикла drawPoint()
+        по всему виджету каждые 16 мс."""
         pm = QPixmap(max(1, W), max(1, H))
         pm.fill(Qt.GlobalColor.transparent)
         gp = QPainter(pm)
@@ -479,14 +481,14 @@ class HudCanvas(QWidget):
         self._tick += 1
         now = time.time()
 
-        # ── Live audio reactivity ────────────────────────────────────────────
-        # Audio threads push peaks into _live_amp; decay it toward silence so
-        # gaps between chunks fade out instead of freezing, then smooth it.
+        # ── Живая реакция на звук ────────────────────────────────────────────
+        # Потоки аудио толкают пики в _live_amp; гасим его к тишине, чтобы
+        # паузы между чанками затухали, а не замирали, затем сглаживаем.
         self._live_amp *= 0.86
         self._amp_disp += (self._live_amp - self._amp_disp) * 0.45
         amp = self._amp_disp
 
-        # Slow "breathing" base target (random shimmer), refreshed on a timer.
+        # Медленная базовая цель «дыхания» (случайное мерцание), обновляется по таймеру.
         if now - self._last_t > (0.12 if self.speaking else 0.5):
             if self.speaking:
                 self._base_scale = 1.03
@@ -499,8 +501,8 @@ class HudCanvas(QWidget):
                 self._base_halo  = random.uniform(48, 68)
             self._last_t = now
 
-        # Every frame, the live audio level lifts the target on top of the base
-        # — this is what makes the core visibly pulse to the actual voice.
+        # Каждый кадр живой уровень звука поднимает цель поверх базовой
+        # — именно из-за этого ядро заметно пульсирует в такт настоящему голосу.
         if self.muted:
             self._tgt_scale, self._tgt_halo = self._base_scale, self._base_halo
         elif self.speaking:
@@ -514,7 +516,7 @@ class HudCanvas(QWidget):
         self._scale += (self._tgt_scale - self._scale) * sp
         self._halo  += (self._tgt_halo  - self._halo)  * sp
 
-        # Rings/scanners spin faster while speaking, reacting to loudness.
+        # Кольца/сканеры крутятся быстрее во время речи, реагируя на громкость.
         boost  = 1.0 + amp * 1.6
         speeds = ([1.3, -0.9, 2.0] if self.speaking else [0.55, -0.35, 0.9])
         for i, spd in enumerate(speeds):
@@ -552,11 +554,12 @@ class HudCanvas(QWidget):
         else:
             _blinked = False
 
-        # Repaint throttling — advancing the animation state above is cheap at
-        # 60 Hz, but the paint is heavy. Repaint every frame while something is
-        # actually happening (speaking, audio, thinking) or when the blink
-        # toggles; otherwise drop to ~20 Hz so an idle HUD stops pinning a CPU
-        # core. The visuals stay smooth because the state keeps stepping.
+        # Троттлинг перерисовки — продвигать состояние анимации выше дёшево при
+        # 60 Гц, а вот сама отрисовка тяжёлая. Перерисовываем каждый кадр, пока
+        # что-то действительно происходит (речь, звук, обдумывание) или когда
+        # перемигивание переключается; иначе падаем до ~20 Гц, чтобы простой HUD
+        # не держал на себе ядро CPU. Картинка остаётся плавной, потому что
+        # состояние продолжает шагать.
         self._paint_tick = (self._paint_tick + 1) % 3
         active = (self.speaking or amp > 0.02
                   or self.state in ("THINKING", "PROCESSING"))
@@ -565,7 +568,7 @@ class HudCanvas(QWidget):
 
     def paintEvent(self, _):
         p = QPainter(self)
-        if not p.isActive():      # device not ready (e.g. 0-size during layout) — skip cleanly
+        if not p.isActive():      # устройство не готово (напр. нулевой размер при раскладке) — выходим чисто
             return
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.fillRect(self.rect(), qcol(C.BG))
@@ -574,8 +577,8 @@ class HudCanvas(QWidget):
         cx, cy = W / 2, H / 2
         fw = min(W, H)
 
-        # grid dots — blitted from a cached layer; rebuilt only when the size
-        # or the theme's ghost colour changes (so live re-theming still works).
+        # точки сетки — вставляются из кэшированного слоя; перестраиваются только
+        # когда меняется размер или цвет-призрак темы (чтобы живая смена темы работала).
         _gkey = (W, H, C.PRI_GHO)
         if self._grid_cache is None or self._grid_key != _gkey:
             self._grid_cache = self._make_grid(W, H)
@@ -584,7 +587,7 @@ class HudCanvas(QWidget):
 
         r_face = fw * 0.31
 
-        # halo glow
+        # ореол свечения
         for i in range(10):
             r   = r_face * (1.8 - i * 0.08)
             frc = 1.0 - i / 10
@@ -593,14 +596,14 @@ class HudCanvas(QWidget):
             p.setPen(QPen(col, 1.5)); p.setBrush(Qt.BrushStyle.NoBrush)
             p.drawEllipse(QRectF(cx - r, cy - r, r * 2, r * 2))
 
-        # pulse rings
+        # пульсирующие кольца
         for pr in self._pulses:
             a   = max(0, int(230 * (1.0 - pr / (fw * 0.74))))
             col = qcol(C.MUTED_C if self.muted else C.PRI, a)
             p.setPen(QPen(col, 1.5)); p.setBrush(Qt.BrushStyle.NoBrush)
             p.drawEllipse(QRectF(cx - pr, cy - pr, pr * 2, pr * 2))
 
-        # spinning arc rings
+        # вращающиеся дуговые кольца
         for idx, (r_frac, w_r, arc_l, gap) in enumerate(
             [(0.48, 3, 115, 78), (0.40, 2, 78, 55), (0.32, 1, 56, 40)]
         ):
@@ -615,7 +618,7 @@ class HudCanvas(QWidget):
                 p.drawArc(rect, int(angle * 16), int(arc_l * 16))
                 angle += arc_l + gap
 
-        # scanners
+        # сканеры
         sr = fw * 0.50
         sa = min(255, int(self._halo * 1.5))
         ex = 75 if self.speaking else 44
@@ -626,7 +629,7 @@ class HudCanvas(QWidget):
         p.setPen(QPen(qcol(C.ACC, sa // 2), 1.5))
         p.drawArc(srect, int(self._scan2 * 16), int(ex * 16))
 
-        # tick marks
+        # риски-деления
         t_out, t_in = fw * 0.497, fw * 0.474
         p.setPen(QPen(qcol(C.PRI, 140), 1))
         for deg in range(0, 360, 10):
@@ -637,7 +640,7 @@ class HudCanvas(QWidget):
                 QPointF(cx + inn  * math.cos(rad), cy - inn  * math.sin(rad)),
             )
 
-        # crosshair
+        # перекрестье
         ch_r, gap_h = fw * 0.51, fw * 0.16
         p.setPen(QPen(qcol(C.PRI, int(self._halo * 0.5)), 1))
         p.drawLine(QPointF(cx - ch_r, cy), QPointF(cx - gap_h, cy))
@@ -645,7 +648,7 @@ class HudCanvas(QWidget):
         p.drawLine(QPointF(cx, cy - ch_r), QPointF(cx, cy - gap_h))
         p.drawLine(QPointF(cx, cy + gap_h), QPointF(cx, cy + ch_r))
 
-        # corner brackets
+        # угловые скобки
         bl = 24
         bc = qcol(C.PRI, 210)
         hl, hr = cx - fw // 2, cx + fw // 2
@@ -655,11 +658,11 @@ class HudCanvas(QWidget):
             p.drawLine(QPointF(bx, by), QPointF(bx + dx * bl, by))
             p.drawLine(QPointF(bx, by), QPointF(bx, by + dy * bl))
 
-        # face
+        # лицо
         if self._face_px:
             fsz = int(fw * 0.62 * self._scale)
-            # Quantise the target size so the expensive smooth rescale only runs
-            # when it visibly changes — not on every 1 px "breathing" step.
+            # Квантуем целевой размер, чтобы дорогое плавное масштабирование
+            # шло только когда изменение заметно — а не на каждом шаге «дыхания» в 1 px.
             q_sz = max(1, (fsz // 4) * 4)
             if self._face_cache is None or self._face_cache_sz != q_sz:
                 self._face_cache = self._face_px.scaled(
@@ -686,14 +689,14 @@ class HudCanvas(QWidget):
             p.drawText(QRectF(cx - 80, cy - 14, 160, 28),
                        Qt.AlignmentFlag.AlignCenter, self._assistant_name)
 
-        # particles
+        # частицы
         for pt in self._particles:
             a = max(0, min(255, int(pt[4] * 255)))
             p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(QBrush(qcol(C.PRI, a)))
             p.drawEllipse(QPointF(pt[0], pt[1]), 2.5, 2.5)
 
-        # status text
+        # текст состояния
         sy = cy + fw * 0.40
         if self.muted:
             txt, col = "⊘  MUTED",     qcol(C.MUTED_C)
@@ -716,9 +719,9 @@ class HudCanvas(QWidget):
         p.setFont(QFont("Courier New", 11, QFont.Weight.Bold))
         p.drawText(QRectF(0, sy, W, 26), Qt.AlignmentFlag.AlignCenter, txt)
 
-        # waveform — reacts to the real audio level (mic while listening,
-        # Anfisa's own voice while speaking). Falls back to a gentle idle
-        # ripple when there's no sound. _amp_disp is the smoothed 0–1 level.
+        # осциллограмма — реагирует на настоящий уровень звука (микрофон, когда
+        # слушает, собственный голос «Анфисы», когда говорит). Когда звука нет,
+        # откатывается к мягкому фоновому дрожанию. _amp_disp — сглаженный уровень 0–1.
         wy = sy + 30
         N, bw = 36, 8
         wx0 = (W - N * bw) / 2
@@ -728,7 +731,7 @@ class HudCanvas(QWidget):
             if self.muted:
                 hgt, cl = 2, qcol(C.MUTED_C)
             else:
-                env     = (1.0 - abs(i - mid) / mid) ** 0.7      # center-weighted hump
+                env     = (1.0 - abs(i - mid) / mid) ** 0.7      # горб с весом к центру
                 shimmer = 0.55 + 0.45 * math.sin(self._tick * 0.18 + i * 0.7)
                 idle    = 3.0 + 2.0 * math.sin(self._tick * 0.09 + i * 0.6)
                 hgt     = int(max(2, min(24, idle + amp * 22.0 * env * shimmer)))
@@ -738,7 +741,7 @@ class HudCanvas(QWidget):
                     cl = qcol(C.BORDER_B)
             p.fillRect(QRectF(wx0 + i * bw, wy + 20 - hgt, bw - 1, hgt), cl)
 
-        p.end()   # end deterministically so the backing store never flushes an active painter
+        p.end()   # завершаем детерминированно, чтобы backing store никогда не сбросил активный художник
 
 class MetricBar(QWidget):
 
@@ -754,7 +757,7 @@ class MetricBar(QWidget):
     def set_value(self, pct: float, text: str):
         v = max(0.0, min(100.0, pct))
         if v == self._value and text == self._text:
-            return          # unchanged — skip the repaint
+            return          # без изменений — пропускаем перерисовку
         self._value = v
         self._text  = text
         self.update()
@@ -807,9 +810,9 @@ class LogWidget(QTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setReadOnly(True)
-        # Cap scrollback so an hours-long session can't grow the document
-        # without bound — keeps memory flat and every insert cheap. Oldest
-        # lines drop off the top automatically.
+        # Ограничиваем прокрутку, чтобы многочасовая сессия не могла
+        # бесконечно разрастять документ — память остаётся плоской и каждая
+        # вставка дешёвая. Самые старые строки автоматически уходят сверху.
         self.document().setMaximumBlockCount(600)
         self.setFont(QFont("Courier New", 9))
         self.setStyleSheet(f"""
@@ -837,7 +840,7 @@ class LogWidget(QTextEdit):
         self._text    = ""
         self._pos     = 0
         self._tag     = "sys"
-        self._ai_name_lc = "Anfisa"   # updated when assistant name changes
+        self._ai_name_lc = "Anfisa"   # обновляется при смене имени ассистента
         self._tmr = QTimer(self)
         self._tmr.timeout.connect(self._step)
         self._sig.connect(self._enqueue)
@@ -948,10 +951,10 @@ class FileDropZone(QWidget):
         layout.addWidget(self._canvas)
 
     def _animate(self):
-        # The marching-ants dashed border is only meaningful while the user is
-        # hovering or dragging a file over the zone. When idle, skip the repaint
-        # entirely instead of redrawing the whole zone 25×/s forever — that idle
-        # repaint held the GIL and stole time from the audio/response threads.
+        # Пунктирная рамка «бегущих муравьёв» осмысленна только пока пользователь
+        # наводит курсор или тащит файл в зону. В простое пропускаем перерисовку
+        # целиком вместо вечного обновления всей зоны 25 раз/с — такая фоновая
+        # перерисовка держала GIL и отнимала время у потоков аудио/ответа.
         if not (self._hovering or self._drag_over):
             return
         self._dash_offset = (self._dash_offset + 0.8) % 20
@@ -992,15 +995,15 @@ class FileDropZone(QWidget):
 
     def _browse(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Select a file for Anfisa", str(Path.home()),
-            "All Files (*.*);;"
-            "Images (*.jpg *.jpeg *.png *.gif *.webp *.bmp *.svg);;"
-            "Documents (*.pdf *.docx *.txt *.md *.pptx);;"
-            "Data (*.csv *.xlsx *.json *.xml);;"
-            "Code (*.py *.js *.ts *.html *.css *.java *.cpp *.go);;"
-            "Audio (*.mp3 *.wav *.ogg *.m4a *.aac *.flac);;"
-            "Video (*.mp4 *.avi *.mov *.mkv *.wmv *.webm);;"
-            "Archives (*.zip *.rar *.tar *.gz *.7z)",
+            self, "Выберите файл для «Анфисы»", str(Path.home()),
+            "Все файлы (*.*);;"
+            "Изображения (*.jpg *.jpeg *.png *.gif *.webp *.bmp *.svg);;"
+            "Документы (*.pdf *.docx *.txt *.md *.pptx);;"
+            "Данные (*.csv *.xlsx *.json *.xml);;"
+            "Код (*.py *.js *.ts *.html *.css *.java *.cpp *.go);;"
+            "Аудио (*.mp3 *.wav *.ogg *.m4a *.aac *.flac);;"
+            "Видео (*.mp4 *.avi *.mov *.mkv *.wmv *.webm);;"
+            "Архивы (*.zip *.rar *.tar *.gz *.7z)",
         )
         if path:
             self._set_file(path)
@@ -1057,11 +1060,11 @@ class _DropCanvas(QWidget):
         p.setFont(QFont("Courier New", 8))
         p.setPen(QPen(qcol(C.PRI_DIM if not hover else C.TEXT), 1))
         p.drawText(QRectF(0, cy + 8, W, 16), Qt.AlignmentFlag.AlignCenter,
-                   "Drop file here  or  Click to Browse")
+                   "Перетащите файл сюда  или  Нажмите для выбора")
         p.setFont(QFont("Courier New", 7))
         p.setPen(QPen(qcol("#1a4a5a"), 1))
         p.drawText(QRectF(0, cy + 24, W, 14), Qt.AlignmentFlag.AlignCenter,
-                   "Images · Video · Audio · PDF · Docs · Code · Data")
+                   "Изображения · Видео · Аудио · PDF · Документы · Код · Данные")
 
     def _paint_drag_over(self, p, W, H):
         cx, cy = W / 2, H / 2
@@ -1070,7 +1073,7 @@ class _DropCanvas(QWidget):
         p.drawText(QRectF(0, cy - 24, W, 32), Qt.AlignmentFlag.AlignCenter, "⬇")
         p.setFont(QFont("Courier New", 8, QFont.Weight.Bold))
         p.setPen(QPen(qcol(C.PRI), 1))
-        p.drawText(QRectF(0, cy + 12, W, 16), Qt.AlignmentFlag.AlignCenter, "Release to load")
+        p.drawText(QRectF(0, cy + 12, W, 16), Qt.AlignmentFlag.AlignCenter, "Отпустите для загрузки")
 
     def _paint_file(self, p, W, H):
         path = Path(self._z._current_file)
@@ -1119,7 +1122,7 @@ class _DropCanvas(QWidget):
 
 
 class _CameraPreview(QWidget):
-    """Floating overlay that briefly shows what the camera captured."""
+    """Всплывающая накладка, которая коротко показывает, что сняла камера."""
 
     _W, _H = 244, 188
 
@@ -1140,7 +1143,7 @@ class _CameraPreview(QWidget):
         lay.setSpacing(4)
 
         hdr = QHBoxLayout()
-        title = QLabel("◈  VISUAL INPUT")
+        title = QLabel("◈  ВИЗУАЛЬНЫЙ ВВОД")
         title.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
         title.setStyleSheet(f"color: {C.PRI}; background: transparent;")
         hdr.addWidget(title)
@@ -1182,7 +1185,7 @@ class _CameraPreview(QWidget):
             self.adjustSize()
         self.show()
         self.raise_()
-        self._timer.start(6_000)   # auto-dismiss after 6 s
+        self._timer.start(6_000)   # автоскрытие через 6 с
 
 
 class SetupOverlay(QWidget):
@@ -1217,15 +1220,15 @@ class SetupOverlay(QWidget):
             w.setStyleSheet(f"color: {color}; background: transparent;")
             return w
 
-        layout.addWidget(_lbl("◈  INITIALISATION REQUIRED", 13, True))
-        layout.addWidget(_lbl("Configure Anfisa. before first boot.", 9, color=C.PRI_DIM))
+        layout.addWidget(_lbl("◈  ТРЕБУЕТСЯ ИНИЦИАЛИЗАЦИЯ", 13, True))
+        layout.addWidget(_lbl("Настройте «Анфису» перед первым запуском.", 9, color=C.PRI_DIM))
         layout.addSpacing(6)
 
         sep = QFrame(); sep.setFrameShape(QFrame.Shape.HLine)
         sep.setStyleSheet(f"color: {C.BORDER};"); layout.addWidget(sep)
         layout.addSpacing(4)
 
-        layout.addWidget(_lbl("GEMINI API KEY", 8, color=C.TEXT_DIM,
+        layout.addWidget(_lbl("КЛЮЧ GEMINI API", 8, color=C.TEXT_DIM,
                                align=Qt.AlignmentFlag.AlignLeft))
         self._key_input = QLineEdit()
         self._key_input.setEchoMode(QLineEdit.EchoMode.Password)
@@ -1246,10 +1249,10 @@ class SetupOverlay(QWidget):
         sep2.setStyleSheet(f"color: {C.BORDER};"); layout.addWidget(sep2)
         layout.addSpacing(4)
 
-        layout.addWidget(_lbl("OPERATING SYSTEM", 8, color=C.TEXT_DIM,
+        layout.addWidget(_lbl("ОПЕРАЦИОННАЯ СИСТЕМА", 8, color=C.TEXT_DIM,
                                align=Qt.AlignmentFlag.AlignLeft))
         det_name = {"windows": "Windows", "mac": "macOS", "linux": "Linux"}[detected]
-        layout.addWidget(_lbl(f"Auto-detected: {det_name}", 8, color=C.ACC2,
+        layout.addWidget(_lbl(f"Определена автоматически: {det_name}", 8, color=C.ACC2,
                                align=Qt.AlignmentFlag.AlignLeft))
 
         os_row = QHBoxLayout(); os_row.setSpacing(6)
@@ -1266,7 +1269,7 @@ class SetupOverlay(QWidget):
         self._sel(detected)
         layout.addSpacing(12)
 
-        init_btn = QPushButton("▸  INITIALISE SYSTEMS")
+        init_btn = QPushButton("▸  ИНИЦИАЛИЗИРОВАТЬ СИСТЕМЫ")
         init_btn.setFont(QFont("Courier New", 10, QFont.Weight.Bold))
         init_btn.setFixedHeight(36)
         init_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1316,15 +1319,15 @@ class SetupOverlay(QWidget):
 
 class HueWheel(QWidget):
     """
-    Circular colour picker. The user drags the handle (small white circle)
-    around the wheel to choose from ALL hues. The filled circle in the centre
-    is a live preview of the selected colour.
+    Круговой выбор цвета. Пользователь таскает ручку (белый кружок)
+    по колесу, выбирая из ВСЕХ оттенков. Залитый круг в центре —
+    живой предпросмотр выбранного цвета.
     """
 
-    hue_picked    = pyqtSignal(str)   # while dragging (live)
-    hue_committed = pyqtSignal(str)   # when the handle is released
+    hue_picked    = pyqtSignal(str)   # во время перетаскивания (живьём)
+    hue_committed = pyqtSignal(str)   # когда ручку отпустили
 
-    _RING = 16   # ring thickness (px)
+    _RING = 16   # толщина кольца (px)
 
     def __init__(self, initial_hex: str = DEFAULT_UI_COLOR, parent=None):
         super().__init__(parent)
@@ -1344,7 +1347,7 @@ class HueWheel(QWidget):
             self._hue = c.hsvHueF()
             self.update()
 
-    # ── geometry helpers ─────────────────────────────────────────────────────
+    # ── вспомогательные функции геометрии ────────────────────────────────────
     def _ring_rect(self) -> QRectF:
         m = self._RING / 2 + 3
         return QRectF(self.rect()).adjusted(m, m, -m, -m)
@@ -1352,11 +1355,11 @@ class HueWheel(QWidget):
     def _hue_from_pos(self, pos: QPointF) -> float:
         c  = QRectF(self.rect()).center()
         dx = pos.x() - c.x()
-        dy = c.y() - pos.y()          # screen y goes down — flip to math axis
-        ang = math.atan2(dy, dx)      # [-π, π], counter-clockwise
+        dy = c.y() - pos.y()          # на экране y идёт вниз — разворачиваем к математической оси
+        ang = math.atan2(dy, dx)      # [-π, π], против часовой стрелки
         return (ang / (2 * math.pi)) % 1.0
 
-    # ── drawing ──────────────────────────────────────────────────────────────
+    # ── отрисовка ────────────────────────────────────────────────────────────
     def paintEvent(self, _):
         p = QPainter(self)
         if not p.isActive():
@@ -1372,14 +1375,14 @@ class HueWheel(QWidget):
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawEllipse(rect)
 
-        # centre preview circle
+        # круг предпросмотра в центре
         preview = QColor.fromHsvF(self._hue, 1.0, 1.0)
         inner   = rect.adjusted(30, 30, -30, -30)
         p.setPen(QPen(qcol(C.BORDER_B), 1))
         p.setBrush(QBrush(preview))
         p.drawEllipse(inner)
 
-        # draggable handle
+        # перетаскиваемая ручка
         r   = rect.width() / 2
         ang = self._hue * 2 * math.pi
         hx  = center.x() + r * math.cos(ang)
@@ -1389,7 +1392,7 @@ class HueWheel(QWidget):
         p.drawEllipse(QPointF(hx, hy), 7.5, 7.5)
         p.end()
 
-    # ── fare ─────────────────────────────────────────────────────────────────
+    # ── мышь ─────────────────────────────────────────────────────────────────
     def mousePressEvent(self, e):
         self._drag = True
         self._hue  = self._hue_from_pos(e.position())
@@ -1409,7 +1412,7 @@ class HueWheel(QWidget):
 
 
 class CustomizeOverlay(QWidget):
-    """Floating overlay — change assistant name, user name, UI colour and voice."""
+    """Всплывающая панель — изменить имя ассистента, имя пользователя, цвет интерфейса и голос."""
 
     saved = pyqtSignal(str, str, str, str)   # assistant_name, user_name, ui_color, voice
     _OW, _OH = 400, 588
@@ -1440,12 +1443,12 @@ class CustomizeOverlay(QWidget):
                f"border: 1px solid {C.BORDER}; border-radius: 3px; padding: 4px 8px; }}"
                f"QLineEdit:focus {{ border: 1px solid {C.PRI}; }}")
 
-        lay.addWidget(_lbl("⚙  CUSTOMISE ASSISTANT", 12, True))
+        lay.addWidget(_lbl("⚙  НАСТРОЙКА АССИСТЕНТА", 12, True))
         sep = QFrame(); sep.setFrameShape(QFrame.Shape.HLine)
         sep.setStyleSheet(f"color: {C.BORDER}; margin: 2px 0;")
         lay.addWidget(sep)
 
-        lay.addWidget(_lbl("ASSISTANT NAME", 8, color=C.TEXT_DIM,
+        lay.addWidget(_lbl("ИМЯ АССИСТЕНТА", 8, color=C.TEXT_DIM,
                             align=Qt.AlignmentFlag.AlignLeft))
         self._name_input = QLineEdit(assistant_name)
         self._name_input.setFont(QFont("Courier New", 10))
@@ -1454,21 +1457,21 @@ class CustomizeOverlay(QWidget):
         lay.addWidget(self._name_input)
 
         lay.addSpacing(4)
-        lay.addWidget(_lbl("YOUR NAME  (leave blank for default sir / efendim)", 8,
+        lay.addWidget(_lbl("ВАШЕ ИМЯ  (оставьте пустым — по умолчанию, сэр)", 8,
                             color=C.TEXT_DIM, align=Qt.AlignmentFlag.AlignLeft))
         self._user_input = QLineEdit(user_name)
-        self._user_input.setPlaceholderText("e.g.  Tony   (leave blank for auto)")
+        self._user_input.setPlaceholderText("напр.  Тони   (оставьте пустым для авто)")
         self._user_input.setFont(QFont("Courier New", 10))
         self._user_input.setFixedHeight(32)
         self._user_input.setStyleSheet(_fs)
         lay.addWidget(self._user_input)
 
-        # ── Assistant voice — Gemini prebuilt voices ─────────────────────────
-        # Names are language-neutral proper nouns, so the row reads the same in
-        # every locale. Selecting one and applying rebuilds the Live session.
+        # ── Голос ассистента — готовые голоса Gemini ──────────────────────────
+        # Имена — нейтральные собственные названия, поэтому строка читается
+        # одинаково в любой локали. Выбор и применение пересобирают Live-сессию.
         from memory.config_manager import AVAILABLE_VOICES, DEFAULT_VOICE
         lay.addSpacing(4)
-        lay.addWidget(_lbl("ASSISTANT VOICE", 8, color=C.TEXT_DIM,
+        lay.addWidget(_lbl("ГОЛОС АССИСТЕНТА", 8, color=C.TEXT_DIM,
                             align=Qt.AlignmentFlag.AlignLeft))
         self._sel_voice   = (voice or DEFAULT_VOICE)
         if self._sel_voice not in AVAILABLE_VOICES:
@@ -1487,13 +1490,13 @@ class CustomizeOverlay(QWidget):
         lay.addLayout(voice_row)
         self._refresh_voice_btns()
 
-        # ── UI colour — colour wheel ─────────────────────────────────────────
+        # ── Цвет интерфейса — колесо цвета ───────────────────────────────────
         lay.addSpacing(4)
         clr_hdr = QHBoxLayout()
-        clr_hdr.addWidget(_lbl("UI COLOUR  —  drag the handle", 8,
+        clr_hdr.addWidget(_lbl("ЦВЕТ ИНТЕРФЕЙСА  —  тяните ручку", 8,
                                color=C.TEXT_DIM, align=Qt.AlignmentFlag.AlignLeft))
         clr_hdr.addStretch()
-        df_btn = QPushButton("DEFAULT")
+        df_btn = QPushButton("СБРОСИТЬ")
         df_btn.setFixedSize(64, 20)
         df_btn.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
         df_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1510,7 +1513,7 @@ class CustomizeOverlay(QWidget):
 
         self._initial_color = (ui_color or DEFAULT_UI_COLOR).strip().lower()
         self._sel_color     = self._initial_color
-        self.on_preview     = None   # callable(hex) — live preview; MainWindow wires it
+        self.on_preview     = None   # callable(hex) — живой предпросмотр; подключает MainWindow
 
         self._wheel = HueWheel(self._sel_color)
         wheel_row = QHBoxLayout()
@@ -1520,7 +1523,7 @@ class CustomizeOverlay(QWidget):
         self._wheel.hue_committed.connect(self._on_wheel_commit)
 
         self._hex_input = QLineEdit(self._sel_color)
-        self._hex_input.setPlaceholderText("#00d4ff   (custom hex colour)")
+        self._hex_input.setPlaceholderText("#00d4ff   (произвольный цвет в hex)")
         self._hex_input.setFont(QFont("Courier New", 10))
         self._hex_input.setFixedHeight(28)
         self._hex_input.setStyleSheet(_fs)
@@ -1530,7 +1533,7 @@ class CustomizeOverlay(QWidget):
         lay.addSpacing(6)
         btn_row = QHBoxLayout(); btn_row.setSpacing(8)
 
-        save_btn = QPushButton("▸  APPLY CHANGES")
+        save_btn = QPushButton("▸  ПРИМЕНИТЬ ИЗМЕНЕНИЯ")
         save_btn.setFixedHeight(34)
         save_btn.setFont(QFont("Courier New", 9, QFont.Weight.Bold))
         save_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1544,7 +1547,7 @@ class CustomizeOverlay(QWidget):
         save_btn.clicked.connect(self._save)
         btn_row.addWidget(save_btn)
 
-        cancel_btn = QPushButton("CANCEL")
+        cancel_btn = QPushButton("ОТМЕНА")
         cancel_btn.setFixedHeight(34)
         cancel_btn.setFont(QFont("Courier New", 9))
         cancel_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1559,13 +1562,13 @@ class CustomizeOverlay(QWidget):
         btn_row.addWidget(cancel_btn)
         lay.addLayout(btn_row)
 
-    # ── voice selection ──────────────────────────────────────────────────────
+    # ── выбор голоса ─────────────────────────────────────────────────────────
     def _on_voice_pick(self, name: str):
         self._sel_voice = name
         self._refresh_voice_btns()
 
     def _refresh_voice_btns(self):
-        """Highlight the selected voice pill; dim the rest."""
+        """Подсвечивает выбранный голос; остальные гасит."""
         for name, b in self._voice_btns.items():
             on = (name == self._sel_voice)
             b.setChecked(on)
@@ -1581,9 +1584,9 @@ class CustomizeOverlay(QWidget):
                     QPushButton:hover {{ color: {C.TEXT}; border-color: {C.BORDER_B}; }}
                 """)
 
-    # ── colour flow ──────────────────────────────────────────────────────────
+    # ── работа с цветом ──────────────────────────────────────────────────────
     def _set_color(self, hx: str, update_wheel: bool = True, preview: bool = True):
-        """Updates the selected colour; hex box + wheel stay in sync, theme is live-previewed."""
+        """Обновляет выбранный цвет; поле hex и колесо синхронны, тема показывается вживую."""
         self._sel_color = hx.strip().lower()
         self._hex_input.blockSignals(True)
         self._hex_input.setText(self._sel_color)
@@ -1594,14 +1597,14 @@ class CustomizeOverlay(QWidget):
             self.on_preview(self._sel_color)
 
     def _on_wheel_pick(self, hx: str):
-        # While dragging: update the hex box, don't apply the theme yet
+        # Во время перетаскивания: обновляем поле hex, тему ещё не применяем
         self._sel_color = hx
         self._hex_input.blockSignals(True)
         self._hex_input.setText(hx)
         self._hex_input.blockSignals(False)
 
     def _on_wheel_commit(self, hx: str):
-        # Handle released → live-preview the whole interface
+        # Ручку отпустили → показываем весь интерфейс в новом цвете
         self._set_color(hx, update_wheel=False)
 
     def _on_hex_edited(self, text: str):
@@ -1614,7 +1617,7 @@ class CustomizeOverlay(QWidget):
             self._set_color(t, update_wheel=True, preview=True)
 
     def _cancel(self):
-        # If a preview was applied, revert to the colour from launch
+        # Предпросмотр уже применяли — возвращаем цвет, с которым запустились
         if self.on_preview and self._sel_color != self._initial_color:
             self.on_preview(self._initial_color)
         self.hide()
@@ -1627,7 +1630,7 @@ class CustomizeOverlay(QWidget):
 
 
 class PluginManagerOverlay(QWidget):
-    """Floating overlay — lists discovered plugins with per-plugin ON/OFF toggles."""
+    """Всплывающая панель — список обнаруженных плагинов с переключателями ВКЛ/ВЫКЛ для каждого."""
 
     _OW = 420
 
@@ -1647,7 +1650,7 @@ class PluginManagerOverlay(QWidget):
         lay.setContentsMargins(20, 16, 20, 16)
         lay.setSpacing(6)
 
-        hdr = QLabel("🧩  PLUGIN MANAGER")
+        hdr = QLabel("🧩  МЕНЕДЖЕР ПЛАГИНОВ")
         hdr.setFont(QFont("Courier New", 12, QFont.Weight.Bold))
         hdr.setStyleSheet(f"color: {C.PRI}; background: transparent;")
         lay.addWidget(hdr)
@@ -1656,7 +1659,7 @@ class PluginManagerOverlay(QWidget):
         lay.addWidget(sep)
 
         if not plugins:
-            empty = QLabel("No plugins found in /plugins.")
+            empty = QLabel("В /plugins плагинов не найдено.")
             empty.setFont(QFont("Courier New", 8))
             empty.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent;")
             lay.addWidget(empty)
@@ -1665,7 +1668,7 @@ class PluginManagerOverlay(QWidget):
             lay.addLayout(self._build_row(p))
 
         lay.addSpacing(4)
-        close_btn = QPushButton("CLOSE")
+        close_btn = QPushButton("ЗАКРЫТЬ")
         close_btn.setFixedHeight(30)
         close_btn.setFont(QFont("Courier New", 9))
         close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1738,17 +1741,18 @@ class PluginManagerOverlay(QWidget):
 
 
 class _HudOverlay(QWidget):
-    """Base for the floating panels placed by hand over the HUD.
+    """Основа для плавающих панелей, которые расставляются вручную поверх HUD.
 
-    They are children of the central widget but sit in no layout, so Qt never
-    invalidates the region they occupy when they hide or shrink: the HUD keeps
-    painting around them and their last frame stays on screen as a ghost. Any
-    overlay positioned with _centre_overlay needs this."""
+    Они дети центрального виджета, но не входят ни в один layout, поэтому Qt
+    не перерисовывает занятую ими область, когда они скрываются или сжимаются:
+    HUD продолжает отрисовываться вокруг них, а их последний кадр остаётся на
+    экране призраком. Любой оверлей, размещённый через _centre_overlay,
+    нуждается в этом."""
 
     def hideEvent(self, e):
         p = self.parentWidget()
         if p is not None:
-            # Repaint exactly what we were covering, before we stop covering it.
+            # Перерисуем ровно то, что закрывали, — пока ещё закрываем.
             p.update(self.geometry())
         super().hideEvent(e)
 
@@ -1760,14 +1764,15 @@ class _HudOverlay(QWidget):
 
 
 class ConfirmBanner(_HudOverlay):
-    """The gate in front of an action that cannot be taken back.
+    """Ворота перед действием, которое нельзя отменить.
 
-    The old confirmation was a tool parameter the model filled in itself, which
-    means it confirmed its own shutdown requests. This is the interface asking,
-    and the answer travels from a human finger to core/confirm.py without the
-    model in the loop. Nothing blocks while it is up: the assistant keeps
-    talking, so this costs no latency — unlike the old gate, which spent two
-    tool round trips on every power command."""
+    Раньше подтверждение было параметром инструмента, который модель заполняла
+    сама, то есть она же подтверждала собственные запросы на завершение работы.
+    Здесь спрашивает интерфейс, и ответ идёт от живого пальца в core/confirm.py,
+    минуя модель. Пока панель открыта, ничто не блокируется: ассистент
+    продолжает говорить, поэтому это не стоит никакой задержки — в отличие от
+    прежних ворот, которые тратили по два круга вызова инструмента на каждую
+    команду питания."""
 
     answered = pyqtSignal(bool)
     _OW = 430
@@ -1788,7 +1793,7 @@ class ConfirmBanner(_HudOverlay):
         lay.setContentsMargins(20, 16, 20, 16)
         lay.setSpacing(8)
 
-        hdr = QLabel("⚠  CONFIRM")
+        hdr = QLabel("⚠  ТРЕБУЕТСЯ ПОДТВЕРЖДЕНИЕ")
         hdr.setFont(QFont("Courier New", 11, QFont.Weight.Bold))
         hdr.setStyleSheet(f"color: {C.ACC}; background: transparent;")
         lay.addWidget(hdr)
@@ -1808,7 +1813,7 @@ class ConfirmBanner(_HudOverlay):
 
         row = QHBoxLayout(); row.setSpacing(8)
 
-        yes = QPushButton("▸  CONFIRM")
+        yes = QPushButton("▸  ПОДТВЕРДИТЬ")
         yes.setFixedHeight(32)
         yes.setFont(QFont("Courier New", 9, QFont.Weight.Bold))
         yes.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1820,7 +1825,7 @@ class ConfirmBanner(_HudOverlay):
         yes.clicked.connect(lambda: self.answered.emit(True))
         row.addWidget(yes)
 
-        no = QPushButton("CANCEL")
+        no = QPushButton("ОТМЕНА")
         no.setFixedHeight(32)
         no.setFont(QFont("Courier New", 9))
         no.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1833,21 +1838,21 @@ class ConfirmBanner(_HudOverlay):
         row.addWidget(no)
         lay.addLayout(row)
 
-        # Default focus on CANCEL: if someone hits Enter without reading, the
-        # safe answer wins.
+        # Фокус по умолчанию — на «ОТМЕНЕ»: если нажать Enter не читая,
+        # побеждает безопасный ответ.
         no.setDefault(True)
         no.setFocus()
 
 
 class AudioDeviceOverlay(_HudOverlay):
-    """Choose which microphone Anfisa listens to and which speakers it uses.
+    """Выбор микрофона, который «Анфиса» слушает, и динамиков, через которые она говорит.
 
-    Both audio streams used to open with no `device=` at all, so they always
-    took the OS default — which on Windows moves by itself the moment a headset
-    is plugged in. 'Anfisa can't hear me' is usually 'Anfisa is listening to the
-    webcam'."""
+    Оба аудиопотока раньше открывались вообще без `device=`, то есть всегда
+    брали системный по умолчанию — а на Windows он сам уезжает в момент, когда
+    вставляют гарнитуру. «Анфиса меня не слышит» обычно означает «Анфиса
+    слушает веб-камеру»."""
 
-    picked = pyqtSignal()      # emitted after Apply, when something changed
+    picked = pyqtSignal()      # отправляется после «ПРИМЕНИТЬ», если что-то изменилось
     _OW = 460
 
     def __init__(self, parent=None):
@@ -1869,7 +1874,7 @@ class AudioDeviceOverlay(_HudOverlay):
         lay.setContentsMargins(20, 16, 20, 16)
         lay.setSpacing(6)
 
-        hdr = QLabel("🎧  AUDIO DEVICES")
+        hdr = QLabel("🎧  АУДИОУСТРОЙСТВА")
         hdr.setFont(QFont("Courier New", 12, QFont.Weight.Bold))
         hdr.setStyleSheet(f"color: {C.PRI}; background: transparent;")
         lay.addWidget(hdr)
@@ -1896,29 +1901,29 @@ class AudioDeviceOverlay(_HudOverlay):
             box.setFont(QFont("Courier New", 9))
             box.setFixedHeight(30)
             box.setStyleSheet(_combo_css)
-            # The list is served from a cache warmed on a background thread at
-            # startup, so opening this panel never blocks the Qt thread on the
-            # host audio API.
+            # Список берётся из кэша, который прогревается на фоновой нити на
+            # старте, поэтому открытие этой панели никогда не блокирует нить Qt
+            # ради host-аудио API.
             box.addItem(DEFAULT_LABEL, "")
             for name in list_devices(kind):
                 box.addItem(name, name)
             idx = box.findData(current) if current else 0
             box.setCurrentIndex(idx if idx >= 0 else 0)
             if current and idx < 0:
-                # Saved device is not plugged in right now. Show it rather than
-                # silently resetting the user's choice to default.
-                box.addItem(f"{current}  (not connected)", current)
+                # Сохранённое устройство сейчас не подключено. Показываем его,
+                # а не молча сбрасываем выбор пользователя на дефолт.
+                box.addItem(f"{current}  (не подключено)", current)
                 box.setCurrentIndex(box.count() - 1)
             lay.addWidget(box)
             return box
 
-        self._in_box  = _row("MICROPHONE — what Anfisa hears you with",
+        self._in_box  = _row("МИКРОФОН — чем «Анфиса» вас слышит",
                              "input", get_input_device())
         lay.addSpacing(4)
-        self._out_box = _row("SPEAKERS — what Anfisa talks through",
+        self._out_box = _row("ДИНАМИКИ — через что «Анфиса» говорит",
                              "output", get_output_device())
 
-        note = QLabel("Applying reconnects the session. Your conversation is kept.")
+        note = QLabel("Применение переподключит сессию. Ваша переписка сохранится.")
         note.setWordWrap(True)
         note.setFont(QFont("Courier New", 7))
         note.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent;")
@@ -1926,7 +1931,7 @@ class AudioDeviceOverlay(_HudOverlay):
         lay.addWidget(note)
 
         row = QHBoxLayout(); row.setSpacing(8)
-        ok = QPushButton("▸  APPLY")
+        ok = QPushButton("▸  ПРИМЕНИТЬ")
         ok.setFixedHeight(32)
         ok.setFont(QFont("Courier New", 9, QFont.Weight.Bold))
         ok.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1938,7 +1943,7 @@ class AudioDeviceOverlay(_HudOverlay):
         ok.clicked.connect(self._apply)
         row.addWidget(ok)
 
-        cancel = QPushButton("CLOSE")
+        cancel = QPushButton("ЗАКРЫТЬ")
         cancel.setFixedHeight(32)
         cancel.setFont(QFont("Courier New", 9))
         cancel.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1962,19 +1967,20 @@ class AudioDeviceOverlay(_HudOverlay):
         save_input_device(new_in)
         save_output_device(new_out)
         self.hide()
-        # Only rebuild the session if something actually moved — a no-op Apply
-        # should not cost a reconnect.
+        # Пересобираем сессию только если что-то реально сдвинулось — холостое
+        # «ПРИМЕНИТЬ» не должно стоить переподключения.
         if changed:
             self.picked.emit()
 
 
 class MemoryOverlay(_HudOverlay):
-    """Everything Anfisa has stored about you, and when it learned it.
+    """Всё, что «Анфиса» сохранила о вас, и когда она это узнала.
 
-    Memory used to be a 2200-character store that deleted its oldest entries
-    when full and mentioned it only on stdout. The cap is gone; this panel is
-    the other half of that change — a memory you cannot inspect is a memory you
-    cannot trust, and 'delete' has to be something the person can do."""
+    Память была хранилищем на 2200 символов, которое при переполнении удаляло
+    самые старые записи и сообщало об этом только в stdout. Ограничение убрали;
+    эта панель — вторая половина той же перемены: памяти, которую нельзя
+    посмотреть, нельзя и доверять, а «удалить» должно быть тем, что человек
+    может сделать сам."""
 
     _OW = 520
 
@@ -1996,23 +2002,23 @@ class MemoryOverlay(_HudOverlay):
         self._rebuild()
 
     def _clear_layout(self):
-        """Take every item out of the layout and detach it from the widget tree
-        in this call.
+        """Достаёт все элементы из layout и отсоединяет их от дерева виджетов
+        прямо в этом вызове.
 
-        deleteLater() on its own is not enough: it queues destruction for the
-        next event-loop pass, and until then the old rows are still children of
-        this widget and still paint — which is what drew half of the previous
-        panel over the new one. setParent(None) removes them from the tree now;
-        deleteLater() then frees them safely."""
+        Одного deleteLater() недостаточно: он только ставит уничтожение в
+        очередь на следующий проход event loop, а до того старые строки всё ещё
+        дети этого виджета и всё ещё рисуются — именно это и выводило половину
+        прежней панели поверх новой. setParent(None) убирает их из дерева сразу;
+        deleteLater() затем освобождает их безопасно."""
         while self._lay.count():
             item = self._lay.takeAt(0)
             w = item.widget()
             if w is not None:
-                # hide() stops it painting in this frame; deleteLater() frees it
-                # safely afterwards. setParent(None) would also stop the paint,
-                # but it turns the widget into a top-level window for the moment
-                # between the two calls, which is not something to leave lying
-                # around inside a click handler.
+                # hide() не даёт отрисоваться в этом кадре; deleteLater()
+                # освобождает виджет безопасно после. setParent(None) тоже
+                # остановило бы отрисовку, но на мгновение между двумя вызовами
+                # превращает виджет в окно верхнего уровня, — оставлять такое
+                # внутри обработчика клика не стоит.
                 w.hide()
                 w.deleteLater()
                 continue
@@ -2027,22 +2033,22 @@ class MemoryOverlay(_HudOverlay):
                 sub.deleteLater()
 
     def _settle(self, before):
-        """Size the panel to its content, re-centre it, and repaint what the old
-        size covered.
+        """Подгоняет панель под содержимое, центрирует её и перерисовывает то,
+        что закрывал старый размер.
 
-        The re-size has to happen here rather than at the end of _rebuild
-        because Qt has not polished the freshly-created children at that point,
-        so the size hint it would read is the empty-layout one. Measured: a
-        first adjustSize() returned 32 px for a panel whose content needed 155,
-        and a second call — after the same widgets had been through the event
-        loop — returned 155. So this runs twice: once now, once on the next
-        turn, from _rebuild.
+        Размер нужно задавать именно здесь, а не в конце _rebuild, потому что
+        Qt к тому моменту ещё не отполировал только что созданные дочерние
+        виджеты, и подсказка размера, которую он бы вернул, — от пустого layout.
+        Замерено: первый adjustSize() вернул 32 px для панели, которой нужно
+        155, а второй вызов — после того же набора виджетов через event loop —
+        вернул 155. Поэтому это выполняется дважды: сейчас и в следующем ходе,
+        из _rebuild.
 
-        The re-centre and the repaint are needed because the overlay is placed
-        by hand and is in no layout: shrinking it leaves it off-centre and
-        leaves its former pixels on screen, since nothing tells the parent that
-        region changed. The repaint has to cover the union of the old and new
-        rectangles."""
+        Центрирование и перерисовка нужны потому, что оверлей размещён вручную
+        и не находится в layout: сжав его, получаешь смещение от центра и
+        оставшиеся на экране пиксели прежней панели — ничто не сообщает
+        родителю, что эта область изменилась. Перерисовка должна покрыть
+        объединение старого и нового прямоугольников."""
         self._lay.invalidate()
         self._lay.activate()
         self.updateGeometry()
@@ -2063,7 +2069,7 @@ class MemoryOverlay(_HudOverlay):
 
         from memory.memory_manager import all_entries_for_ui
 
-        hdr = QLabel("🧠  WHAT Anfisa REMEMBERS")
+        hdr = QLabel("🧠  ЧТО «АНФИСА» ПОМНИТ")
         hdr.setFont(QFont("Courier New", 12, QFont.Weight.Bold))
         hdr.setStyleSheet(f"color: {C.PRI}; background: transparent;")
         self._lay.addWidget(hdr)
@@ -2074,16 +2080,16 @@ class MemoryOverlay(_HudOverlay):
 
         rows = all_entries_for_ui()
 
-        cap = QLabel(f"{len(rows)} stored facts — newest first. "
-                     f"Nothing here is sent anywhere; it lives in "
-                     f"memory/long_term.json on this machine.")
+        cap = QLabel(f"Сохранённых фактов: {len(rows)} — сначала новые. "
+                     f"Отсюда ничего никуда не отправляется; всё лежит в "
+                     f"memory/long_term.json на этом компьютере.")
         cap.setWordWrap(True)
         cap.setFont(QFont("Courier New", 7))
         cap.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent;")
         self._lay.addWidget(cap)
 
         if not rows:
-            empty = QLabel("Nothing stored yet.")
+            empty = QLabel("Пока ничего не сохранено.")
             empty.setFont(QFont("Courier New", 9))
             empty.setStyleSheet(f"color: {C.TEXT_MED}; background: transparent;")
             self._lay.addWidget(empty)
@@ -2118,7 +2124,7 @@ class MemoryOverlay(_HudOverlay):
                 rm.setFixedSize(20, 20)
                 rm.setFont(QFont("Courier New", 8, QFont.Weight.Bold))
                 rm.setCursor(Qt.CursorShape.PointingHandCursor)
-                rm.setToolTip("Forget this")
+                rm.setToolTip("Забыть это")
                 rm.setStyleSheet(f"""
                     QPushButton {{ background: transparent; color: {C.TEXT_DIM};
                         border: 1px solid {C.BORDER}; border-radius: 3px; }}
@@ -2136,7 +2142,7 @@ class MemoryOverlay(_HudOverlay):
             scroll.setWidget(inner)
             self._lay.addWidget(scroll)
 
-        close = QPushButton("CLOSE")
+        close = QPushButton("ЗАКРЫТЬ")
         close.setFixedHeight(30)
         close.setFont(QFont("Courier New", 9))
         close.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -2149,23 +2155,23 @@ class MemoryOverlay(_HudOverlay):
         self._lay.addWidget(close)
 
         self._settle(before)
-        # …and again once Qt has polished the new children, because the size
-        # hint is not final until then. Harmless when the first pass already
-        # got it right: _settle is idempotent.
+        # …и ещё раз, когда Qt отполирует новые дочерние виджеты, потому что до
+        # этого подсказка размера не окончательна. Если первый проход уже угадал,
+        # это безвредно: _settle идемпотентен.
         QTimer.singleShot(0, lambda g=before: self._settle(g))
 
     def _forget(self, category: str, key: str):
         from memory.memory_manager import forget
         forget(key, category)
-        # Rebuild on the NEXT event-loop turn, not inside this click handler.
-        # The rebuild destroys the very ✕ button that emitted this signal, and
-        # Qt is entitled to touch the sender after a slot returns; tearing it
-        # down mid-emission is how a widget ends up half-alive on screen.
+        # Перестраиваем на СЛЕДУЮЩЕМ ходе event loop, не внутри этого обработчика
+        # клика. Перестройка уничтожает ровно ту кнопку ✕, которая испустила этот
+        # сигнал, а Qt вправе тронуть отправителя после возврата слота; разбирать
+        # его посреди испускания — так и получают наполовину живой виджет на экране.
         QTimer.singleShot(0, self._rebuild)
 
 
 class ClipboardPanel(QWidget):
-    """Floating panel shown when text is copied — offers quick Anfisa actions."""
+    """Плавающая панель при копировании текста — предлагает быстрые действия «Анфисы»."""
 
     action_requested = pyqtSignal(str)
     _W, _H = 326, 112
@@ -2188,7 +2194,7 @@ class ClipboardPanel(QWidget):
         lay.setSpacing(4)
 
         hdr = QHBoxLayout(); hdr.setSpacing(4)
-        icon_lbl = QLabel("◈  CLIPBOARD DETECTED")
+        icon_lbl = QLabel("◈  РАСПОЗНАН БУФЕР ОБМЕНА")
         icon_lbl.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
         icon_lbl.setStyleSheet(f"color: {C.ACC2}; background: transparent;")
         hdr.addWidget(icon_lbl); hdr.addStretch()
@@ -2216,10 +2222,10 @@ class ClipboardPanel(QWidget):
                f"border: 1px solid {C.BORDER}; border-radius: 2px; }}"
                f"QPushButton:hover {{ color: {C.PRI}; border-color: {C.BORDER_B}; }}")
         for label, cmd_fmt in [
-            ("TRANSLATE", "Translate this text to English: {text}"),
-            ("SUMMARISE", "Summarise this: {text}"),
-            ("EXPLAIN",   "Explain this: {text}"),
-            ("FIX",       "Fix grammar and spelling: {text}"),
+            ("ПЕРЕВЕСТИ", "Translate this text to English: {text}"),
+            ("СЖАТЬ",     "Summarise this: {text}"),
+            ("ОБЪЯСНИТЬ", "Explain this: {text}"),
+            ("ИСПРАВИТЬ", "Fix grammar and spelling: {text}"),
         ]:
             b = QPushButton(label)
             b.setFixedHeight(22)
@@ -2251,14 +2257,15 @@ class ClipboardPanel(QWidget):
 
 
 class PluginSettingsOverlay(QWidget):
-    """Floating overlay — renders per-plugin settings forms.
+    """Плавающая панель — отрисовывает формы настроек каждого плагина.
 
-    Fully generic: it iterates the settings schemas a plugin declared via its
-    PLUGIN_SETTINGS constant (delivered by PluginRegistry.settings_schemas) and
-    builds a form for each. It knows NOTHING about any specific plugin, so the
-    core stays clean and plugins remain pure drop-in — install a plugin that
-    declares fields (e.g. the 3D-printer suite) and its section appears here;
-    install none and this panel simply says there's nothing to configure.
+    Полностью обобщённая: она проходит по схемам настроек, которые плагины
+    объявили через константу PLUGIN_SETTINGS (их даёт
+    PluginRegistry.settings_schemas), и строит для каждой форму. О конкретных
+    плагинах она НЕ знает ничего, поэтому ядро остаётся чистым, а плагины —
+    чисто drop-in: поставьте плагин, объявляющий поля (например, связка
+    3D-принтеров), и его раздел появится здесь; не поставьте ни одного — панель
+    просто скажет, что настраивать нечего.
     """
 
     _test_done = pyqtSignal(str, bool, str)   # namespace, ok, message
@@ -2275,9 +2282,9 @@ class PluginSettingsOverlay(QWidget):
             }}
         """)
         self._sections = sections or []
-        self._widgets: dict[tuple, object] = {}    # (namespace, key) -> input widget
-        self._types:   dict[tuple, str]    = {}     # (namespace, key) -> field type
-        self._status_labels: dict[str, QLabel] = {} # namespace -> status QLabel
+        self._widgets: dict[tuple, object] = {}    # (namespace, key) -> виджет ввода
+        self._types:   dict[tuple, str]    = {}     # (namespace, key) -> тип поля
+        self._status_labels: dict[str, QLabel] = {} # namespace -> QLabel статуса
         self._test_done.connect(self._on_test_done)
 
         self._fs = (f"QLineEdit {{ background: #000d12; color: {C.TEXT}; "
@@ -2288,16 +2295,16 @@ class PluginSettingsOverlay(QWidget):
         root.setContentsMargins(22, 16, 22, 16)
         root.setSpacing(8)
 
-        root.addWidget(self._lbl("⚙  PLUGIN SETTINGS", 12, True))
+        root.addWidget(self._lbl("⚙  НАСТРОЙКИ ПЛАГИНОВ", 12, True))
         sep = QFrame(); sep.setFrameShape(QFrame.Shape.HLine)
         sep.setStyleSheet(f"color: {C.BORDER}; margin: 2px 0;")
         root.addWidget(sep)
 
         if not self._sections:
             root.addWidget(self._lbl(
-                "No configurable plugins are installed.\nDrop a plugin that needs "
-                "settings (like the 3D-printer suite) into the plugins folder and "
-                "it will show up here.", 9, color=C.TEXT_DIM))
+                "Плагинов с настройками не установлено.\nПоложите в папку "
+                "plugins плагин, которому нужны настройки (например, связку "
+                "3D-принтеров), — он появится здесь.", 9, color=C.TEXT_DIM))
         else:
             scroll = QScrollArea()
             scroll.setWidgetResizable(True)
@@ -2314,10 +2321,10 @@ class PluginSettingsOverlay(QWidget):
             scroll.setWidget(inner)
             root.addWidget(scroll, 1)
 
-        # ── bottom buttons ───────────────────────────────────────────────────
+        # ── нижние кнопки ────────────────────────────────────────────────────
         btn_row = QHBoxLayout(); btn_row.setSpacing(8)
         if self._sections:
-            save_btn = QPushButton("▸  SAVE")
+            save_btn = QPushButton("▸  СОХРАНИТЬ")
             save_btn.setFixedHeight(34)
             save_btn.setFont(QFont("Courier New", 9, QFont.Weight.Bold))
             save_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -2329,7 +2336,7 @@ class PluginSettingsOverlay(QWidget):
             save_btn.clicked.connect(self._save_all)
             btn_row.addWidget(save_btn)
 
-        close_btn = QPushButton("CLOSE")
+        close_btn = QPushButton("ЗАКРЫТЬ")
         close_btn.setFixedHeight(34)
         close_btn.setFont(QFont("Courier New", 9))
         close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -2342,7 +2349,7 @@ class PluginSettingsOverlay(QWidget):
         btn_row.addWidget(close_btn)
         root.addLayout(btn_row)
 
-    # ── helpers ───────────────────────────────────────────────────────────────
+    # ── вспомогательные методы ───────────────────────────────────────────────
     def _lbl(self, txt, fs=9, bold=False, color=C.PRI,
              align=Qt.AlignmentFlag.AlignLeft):
         w = QLabel(txt); w.setAlignment(align); w.setWordWrap(True)
@@ -2406,11 +2413,11 @@ class PluginSettingsOverlay(QWidget):
             self._types[(ns, key)]   = ftype
             form.addWidget(w)
 
-        # optional test/connect action button + status line
+        # необязательная кнопка теста/подключения + строка статуса
         action = sec.get("action")
         if isinstance(action, dict) and callable(action.get("run")):
             form.addSpacing(2)
-            ab = QPushButton(str(action.get("label") or "TEST"))
+            ab = QPushButton(str(action.get("label") or "ТЕСТ"))
             ab.setFixedHeight(30)
             ab.setFont(QFont("Courier New", 8, QFont.Weight.Bold))
             ab.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -2440,7 +2447,7 @@ class PluginSettingsOverlay(QWidget):
             btn.setStyleSheet(f"QPushButton {{ background: transparent; color: {C.TEXT_MED}; "
                               f"border: 1px solid {C.BORDER}; border-radius: 3px; }}")
 
-    # ── data ──────────────────────────────────────────────────────────────────
+    # ── данные ────────────────────────────────────────────────────────────────
     def _gather(self, ns: str) -> dict:
         out = {}
         for (n, key), w in self._widgets.items():
@@ -2466,7 +2473,7 @@ class PluginSettingsOverlay(QWidget):
                 self._save_ns(ns)
                 lbl = self._status_labels.get(ns)
                 if lbl:
-                    lbl.setText("Saved ✓")
+                    lbl.setText("Сохранено ✓")
                     lbl.setStyleSheet(f"color: {C.PRI}; background: transparent;")
 
     def _run_action(self, ns: str):
@@ -2477,11 +2484,11 @@ class PluginSettingsOverlay(QWidget):
         run_fn = (sec.get("action") or {}).get("run")
         if not callable(run_fn):
             return
-        self._save_ns(ns)                 # persist what the user typed before testing
+        self._save_ns(ns)                 # сохраняем введённое пользователем до теста
         values = self._gather(ns)
         lbl = self._status_labels.get(ns)
         if lbl:
-            lbl.setText("Testing…")
+            lbl.setText("Тест…")
             lbl.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent;")
 
         def worker():
@@ -2507,7 +2514,7 @@ class PluginSettingsOverlay(QWidget):
 
 
 class RemoteKeyOverlay(QWidget):
-    """Floating overlay — QR code for instant phone pairing + manual key fallback."""
+    """Плавающая панель — QR-код для мгновенного подключения телефона + ручной ввод ключа."""
 
     closed = pyqtSignal()
 
@@ -2543,7 +2550,7 @@ class RemoteKeyOverlay(QWidget):
             w.setWordWrap(True)
             return w
 
-        lay.addWidget(_lbl("◈  REMOTE ACCESS", 12, True))
+        lay.addWidget(_lbl("◈  УДАЛЁННЫЙ ДОСТУП", 12, True))
         sep = QFrame(); sep.setFrameShape(QFrame.Shape.HLine)
         sep.setStyleSheet(f"color: {C.BORDER}; margin: 1px 0;")
         lay.addWidget(sep)
@@ -2563,13 +2570,13 @@ class RemoteKeyOverlay(QWidget):
 
         self._update_qr(auto_login_url)
 
-        lay.addWidget(_lbl("Scan with phone camera to connect instantly", 8, color=C.TEXT_DIM))
+        lay.addWidget(_lbl("Наведите камеру телефона на код, чтобы подключиться сразу", 8, color=C.TEXT_DIM))
 
         sep2 = QFrame(); sep2.setFrameShape(QFrame.Shape.HLine)
         sep2.setStyleSheet(f"color: {C.BORDER}; margin: 1px 0;")
         lay.addWidget(sep2)
 
-        lay.addWidget(_lbl("Or enter manually:", 7, color=C.TEXT_DIM,
+        lay.addWidget(_lbl("Или введите вручную:", 7, color=C.TEXT_DIM,
                            align=Qt.AlignmentFlag.AlignLeft))
 
         self._url_lbl = QLabel(self._manual_url)
@@ -2600,7 +2607,7 @@ class RemoteKeyOverlay(QWidget):
         lay.addWidget(self._timer_lbl)
 
         btn_row = QHBoxLayout(); btn_row.setSpacing(8)
-        new_btn = QPushButton("NEW KEY")
+        new_btn = QPushButton("НОВЫЙ КЛЮЧ")
         new_btn.setFixedHeight(32)
         new_btn.setFont(QFont("Courier New", 8, QFont.Weight.Bold))
         new_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -2614,7 +2621,7 @@ class RemoteKeyOverlay(QWidget):
         new_btn.clicked.connect(self._refresh_key)
         btn_row.addWidget(new_btn)
 
-        close_btn = QPushButton("DISMISS")
+        close_btn = QPushButton("СКРЫТЬ")
         close_btn.setFixedHeight(32)
         close_btn.setFont(QFont("Courier New", 8, QFont.Weight.Bold))
         close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -2676,12 +2683,12 @@ class RemoteKeyOverlay(QWidget):
     def _tick(self):
         remaining = max(0, int(self._expiry - time.time()))
         m, s = divmod(remaining, 60)
-        self._timer_lbl.setText(f"Key expires in  {m:02d}:{s:02d}")
+        self._timer_lbl.setText(f"Ключ истекает через  {m:02d}:{s:02d}")
         if remaining == 0:
             self._do_close()
 
     def mark_connected(self) -> None:
-        """Call from any thread when a phone successfully connects."""
+        """Вызывать из любой нити, когда телефон успешно подключился."""
         self._ctimer.stop()
         self._key_lbl.setText("CONNECTED")
         self._key_lbl.setStyleSheet(f"""
@@ -2697,7 +2704,7 @@ class RemoteKeyOverlay(QWidget):
         self._qr_label.setStyleSheet(
             "color: #00ff88; background: #001a0d; border-radius: 10px;"
         )
-        self._timer_lbl.setText("Phone connected — Anfisa ready")
+        self._timer_lbl.setText("Телефон подключён — «Анфиса» готова")
         self._timer_lbl.setStyleSheet(f"color: {C.GREEN}; background: transparent;")
 
     def _refresh_key(self):

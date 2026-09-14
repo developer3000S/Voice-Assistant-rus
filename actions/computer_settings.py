@@ -91,11 +91,11 @@ def volume_mute():
             capture_output=True)
 
 def volume_get() -> int | None:
-    """Current master volume 0-100, or None if this platform will not say.
+    """Текущая основная громкость 0-100 либо None, если платформа не хочет её сообщать.
 
-    Undo needs a "before" value, and reading one is cheap on every OS we
-    support. Where it is not readable the action simply is not registered as
-    undoable — a wrong undo is worse than no undo."""
+    Для отмены нужно значение «до», и прочитать его дёшево на любой из
+    поддерживаемых ОС. Там, где его не получить, действие просто не
+    регистрируется как отменяемое — неверная отмена хуже, чем её отсутствие."""
     try:
         if _OS == "Windows":
             import math
@@ -122,7 +122,7 @@ def volume_get() -> int | None:
 
 
 def brightness_get() -> int | None:
-    """Current brightness 0-100, or None where it cannot be read."""
+    """Текущая яркость 0-100 либо None там, где её не прочитать."""
     try:
         if _OS == "Windows":
             r = subprocess.run(
@@ -145,8 +145,9 @@ def brightness_get() -> int | None:
 
 
 def brightness_set(value: int) -> None:
-    """Set brightness to an absolute percentage. Only used to restore a value
-    captured before a change, so it is undo's counterpart to the up/down pair."""
+    """Установить яркость в абсолютный процент. Используется только для
+    восстановления значения, сохранённого перед изменением, то есть это
+    «обратная» пара к действиям вверх/вниз."""
     value = max(0, min(100, int(value)))
     if _OS == "Windows":
         subprocess.run(
@@ -174,7 +175,7 @@ def volume_set(value: int):
             vol.SetMasterVolumeLevel(vol_db, None)
             return
         except Exception as e:
-            print(f"[Settings] pycaw failed, using keypress fallback: {e}")
+            print(f"[Settings] pycaw не сработал, использую резервный нажим клавиш: {e}")
             pyautogui.press("volumemute")
             pyautogui.press("volumemute")
     elif _OS == "Darwin":
@@ -213,7 +214,7 @@ def brightness_up():
                 capture_output=True, timeout=5, **_WIN_HIDE
             )
         except Exception as e:
-            print(f"[Settings] Brightness up failed on Windows: {e}")
+            print(f"[Settings] Не удалось увеличить яркость на Windows: {e}")
 
 def brightness_down():
     if _OS == "Darwin":
@@ -242,7 +243,7 @@ def brightness_down():
                 capture_output=True, timeout=5, **_WIN_HIDE
             )
         except Exception as e:
-            print(f"[Settings] Brightness down failed on Windows: {e}")
+            print(f"[Settings] Не удалось уменьшить яркость на Windows: {e}")
 
 def close_app():
     if _OS == "Darwin": pyautogui.hotkey("command", "q")
@@ -279,7 +280,8 @@ def snap_left():
     if _OS == "Windows":
         pyautogui.hotkey("win", "left")
     elif _OS == "Darwin":
-        # macOS has no built-in snap; try Rectangle app shortcut if installed
+        # В macOS встроенной привязки окон нет; пробуем горячую клавишу
+        # приложения Rectangle, если оно установлено
         try:
             subprocess.run(["open", "-a", "Rectangle"], capture_output=True, timeout=1)
         except Exception:
@@ -501,7 +503,7 @@ def sleep_display():
             import ctypes
             ctypes.windll.user32.SendMessageW(0xFFFF, 0x0112, 0xF170, 2)
         except Exception as e:
-            print(f"[Settings] sleep_display failed: {e}")
+            print(f"[Settings] sleep_display не сработал: {e}")
     elif _OS == "Darwin":
         subprocess.run(["pmset", "displaysleepnow"], capture_output=True)
     else:
@@ -527,7 +529,7 @@ def dark_mode():
             winreg.SetValueEx(key, "SystemUsesLightTheme", 0, winreg.REG_DWORD, 1 - current)
             winreg.CloseKey(key)
         except Exception as e:
-            print(f"[Settings] dark_mode registry failed: {e}")
+            print(f"[Settings] dark_mode через реестр не сработал: {e}")
     else:
         try:
             result = subprocess.run(
@@ -541,7 +543,7 @@ def dark_mode():
                 capture_output=True
             )
         except Exception as e:
-            print(f"[Settings] dark_mode Linux failed: {e}")
+            print(f"[Settings] dark_mode на Linux не сработал: {e}")
 
 def toggle_wifi():
     if _OS == "Darwin":
@@ -563,14 +565,14 @@ def toggle_wifi():
                 capture_output=True, timeout=10, **_WIN_HIDE
             )
         except Exception as e:
-            print(f"[Settings] toggle_wifi Windows failed: {e}")
+            print(f"[Settings] toggle_wifi на Windows не сработал: {e}")
     else:
         try:
             result = subprocess.run(["nmcli", "radio", "wifi"], capture_output=True, text=True)
             state  = "off" if "enabled" in result.stdout else "on"
             subprocess.run(["nmcli", "radio", "wifi", state], capture_output=True)
         except Exception as e:
-            print(f"[Settings] toggle_wifi Linux failed: {e}")
+            print(f"[Settings] toggle_wifi на Linux не сработал: {e}")
 
 def restart_computer():
     if _OS == "Windows":
@@ -654,51 +656,52 @@ ACTION_MAP: dict[str, callable] = {
     "shutdown":            shutdown_computer,
 }
 
-# ── What needs a human, and what just needs an undo ──────────────────────────
+# ── Что требует человека, а что — только отмены ──────────────────────────────
 #
-# The old gate was `_DANGEROUS_ACTIONS = {"restart", "shutdown"}` checked against
-# a `confirmed` parameter the MODEL filled in — so the model confirmed its own
-# shutdowns, and everything else (switching off the WiFi this assistant is
-# talking over) had no gate at all.
+# Раньше барьером был `_DANGEROUS_ACTIONS = {"restart", "shutdown"}`, который
+# сверялся с параметром `confirmed`, заполняемым МОДЕЛЬЮ, — то есть модель сама
+# подтверждала собственную перезагрузку, а для всего остального (например, для
+# выключения WiFi, по которому этот ассистент и разговаривает) барьера не было.
 #
-# Two lists now, and the split is about reversibility, not about how alarming
-# the word sounds:
+# Теперь два списка, и граница проходит по обратимости, а не по тому, насколько
+# тревожно звучит слово:
 #
-#   _IRREVERSIBLE — a human presses a button on the HUD. Nothing else.
-#   everything else — done immediately, with an undo pushed if it can be undone.
+#   _IRREVERSIBLE — кнопку на HUD нажимает человек. Больше никто.
+#   всё остальное — выполняется сразу, и если действие обратимо, создаётся запись для отмены.
 #
-# Asking before every action is what makes an assistant unusable, and every
-# question costs a round trip. Undo is both faster and safer than a prompt.
+# Спрашивать перед каждым действием — значит сделать ассистента непригодным,
+# и каждый вопрос стоит одного лишнего обмена. Отмена быстрее и безопаснее,
+# чем запрос на подтверждение.
 _IRREVERSIBLE = {
-    "restart":     ("Restart this computer",
-                    "Anything unsaved will be lost. The computer restarts in 10 seconds."),
-    "shutdown":    ("Shut this computer down",
-                    "Anything unsaved will be lost. The computer powers off in 10 seconds."),
-    # Not obviously destructive, and that is exactly why it was missed: turning
-    # the WiFi off cuts the assistant's own connection to the Live API, so it
-    # cannot be asked to turn it back on.
-    "toggle_wifi": ("Switch WiFi off or on",
-                    "If this switches WiFi off, Anfisa loses its connection and "
-                    "cannot switch it back on by voice."),
+    "restart":     ("Перезапустить этот компьютер",
+                    "Всё несохранённое будет потеряно. Компьютер перезагрузится через 10 секунд."),
+    "shutdown":    ("Выключить этот компьютер",
+                    "Всё несохранённое будет потеряно. Компьютер выключится через 10 секунд."),
+    # Неочевидно разрушительное действие — именно поэтому его раньше пропустили:
+    # выключение WiFi обрывает собственное соединение ассистента с Live API,
+    # поэтому попросить включить его обратно голосом уже не получится.
+    "toggle_wifi": ("Выключить или включить WiFi",
+                    "Если WiFi выключится, Анфиса потеряет соединение и не сможет "
+                    "включить его обратно голосом."),
 }
 
-# Kept so anything still importing the old name keeps working.
+# Оставлено, чтобы всё, что ещё импортирует старое имя, продолжало работать.
 _DANGEROUS_ACTIONS = set(_IRREVERSIBLE)
 
 
-# ── Local intent resolution ──────────────────────────────────────────────────
+# ── Локальное разрешение намерения ───────────────────────────────────────────
 #
-# This used to be an entire extra Gemini call, made INSIDE the tool: the Live
-# model called computer_settings, and computer_settings then asked a second
-# model which action was meant. Every "turn the volume down" paid for two round
-# trips — and when that second call failed, the fallback was
-# `description.lower().replace(" ", "_")`, which turns the Turkish for "turn it
-# down" into `sesi_kis`, i.e. straight to "Unknown action".
+# Раньше это был отдельный полный вызов Gemini, выполняемый ВНУТРИ инструмента:
+# Live-модель вызывала computer_settings, а computer_settings спрашивал у
+# второй модели, какое действие имелось в виду. Каждое «убавь громкость»
+# стоило двух обменов — а когда второй вызов давал сбой, резервным вариантом
+# было `description.lower().replace(" ", "_")`, что турецкое «убавь звук»
+# превращало в `sesi_kis`, то есть сразу в «Unknown action».
 #
-# Nothing here needs a language model. The Live model already understands the
-# sentence; it only needed the vocabulary, which the tool declaration now spells
-# out in full. What is left is spelling tolerance, and difflib does that in
-# microseconds instead of ~600 ms and a quota unit.
+# Языковая модель здесь не нужна. Live-модель и так понимает фразу — ей не
+# хватало словаря, который теперь полностью перечислен в описании инструмента.
+# Что остаётся — это терпимость к опечаткам, и difflib делает её за
+# микросекунды вместо ~600 мс и израсходованной единицы квоты.
 _ALIASES = {
     "volume_up":       ("louder", "raise volume", "turn it up", "increase volume"),
     "volume_down":     ("quieter", "lower volume", "turn it down", "decrease volume"),
@@ -729,11 +732,11 @@ def _normalise(text: str) -> str:
 
 
 def _detect_action(description: str) -> dict:
-    """Resolve a free-text description to an action name, locally.
+    """Локально сопоставляет произвольную фразу с названием действия.
 
-    Returns {"action": name, "value": ...}; `action` is "" when nothing matched,
-    which the caller turns into a message naming real candidates — one round
-    trip, and only in the case that used to cost one anyway."""
+    Возвращает {"action": name, "value": ...}; `action` пуст, когда совпадения
+    нет, — вызывающий код в этом случае называет реальные кандидаты: один
+    обмен, и только в том случае, который и раньше его требовал."""
     raw  = (description or "").strip()
     norm = _normalise(raw)
     if not norm:
@@ -741,29 +744,29 @@ def _detect_action(description: str) -> dict:
 
     known = set(ACTION_MAP) | _VALUE_ACTIONS
 
-    # 1. Already an action name.
+    # 1. Это уже название действия.
     if norm in known:
         return {"action": norm, "value": None}
 
     low = raw.lower()
 
-    # 2. "set volume to 30", "sesi 30 yap" — a number next to a volume word.
+    # 2. "set volume to 30", "sesi 30 yap" — число рядом со словом о громкости.
     num = re.search(r"(\d{1,3})\s*%?", low)
     if num and any(w in low for w in ("volume", "ses", "sound", "lautstark", "громкость")):
         return {"action": "volume_set", "value": max(0, min(100, int(num.group(1))))}
 
-    # 3. Alias phrases.
+    # 3. Фразы-алиасы.
     for action, phrases in _ALIASES.items():
         if any(_normalise(p) == norm or p in low for p in phrases):
             return {"action": action, "value": None}
 
-    # 4. Fuzzy match on the action names — catches "fullscren", "volumeup".
+    # 4. Нечёткое сравнение названий действий — ловит "fullscren", "volumeup".
     import difflib
     close = difflib.get_close_matches(norm, sorted(known), n=1, cutoff=0.72)
     if close:
         return {"action": close[0], "value": None}
 
-    # 5. Substring: "increase_the_brightness" contains "brightness".
+    # 5. Подстрока: "increase_the_brightness" содержит "brightness".
     for action in sorted(known, key=len, reverse=True):
         if len(action) > 4 and (action in norm or norm in action):
             return {"action": action, "value": None}
@@ -772,14 +775,14 @@ def _detect_action(description: str) -> dict:
 
 
 def _suggest(description: str) -> str:
-    """What to tell the model when nothing matched. Names real actions so its
-    retry lands, instead of the old 'Unknown action' dead end."""
+    """Что сказать модели, когда совпадений нет. Перечисляет настоящие действия,
+    чтобы повтор получился осмысленным, — а не тупик вроде «Unknown action»."""
     import difflib
     near = difflib.get_close_matches(_normalise(description),
                                      sorted(ACTION_MAP), n=5, cutoff=0.3)
     hint = ", ".join(near) if near else ", ".join(sorted(ACTION_MAP)[:12])
-    return (f"I could not match '{description}' to a computer action. "
-            f"Call computer_settings again with an exact `action` from: {hint}.")
+    return (f"Не удалось сопоставить «{description}» с действием компьютера. "
+            f"Вызови computer_settings ещё раз с точным `action` из: {hint}.")
 
 def computer_settings(
     parameters: dict = None,

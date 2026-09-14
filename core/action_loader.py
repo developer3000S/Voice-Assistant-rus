@@ -53,7 +53,7 @@ class ActionRecord:
 
 class ActionRegistry:
     def __init__(self, actions: dict[str, ActionRecord], logger: Callable[[str], None]):
-        self._actions = actions          # name -> ActionRecord, VALID entries only
+        self._actions = actions          # name -> ActionRecord, только ВАЛИДНЫЕ записи
         self._all_records: list[ActionRecord] = []
         self._logger = logger
 
@@ -70,7 +70,7 @@ class ActionRegistry:
     def names(self) -> set[str]:
         return set(self._actions.keys())
 
-    # -- called by main.py from _execute_tool --
+    # -- вызывается main.py из _execute_tool --
     def run(self, name: str, parameters: dict, ctx: dict | None = None) -> str:
         rec = self._actions.get(name)
         if rec is None or not rec.valid:
@@ -78,7 +78,7 @@ class ActionRegistry:
         try:
             return _call_handler(rec.handler, parameters, ctx or {}) or "Готово."
         except Exception as e:
-            self._logger(f"Action '{name}' crashed during run(): {e}")
+            self._logger(f"Действие '{name}' упало во время run(): {e}")
             traceback.print_exc()
             return f"Инструмент '{name}' упал: {e}"
 
@@ -152,7 +152,7 @@ def discover_actions(actions_dir: Path, reserved_names: set[str] | None = None,
             if module is None:
                 spec = importlib.util.spec_from_file_location(module_name, path)
                 if spec is None or spec.loader is None:
-                    raise ImportError("could not build import spec")
+                    raise ImportError("не удалось построить spec для импорта модуля")
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[module_name] = module
                 try:
@@ -182,12 +182,12 @@ def discover_actions(actions_dir: Path, reserved_names: set[str] | None = None,
         all_records.append(rec)
         if rec.valid:
             valid[rec.name] = rec
-            logger(f"Action loaded: {rec.name} ({path.name})")
+            logger(f"Действие загружено: {rec.name} ({path.name})")
         else:
-            # Only log a rejection if the file actually tried to be an action.
-            logger(f"Action rejected: {path.name} — {rec.error}")
+            # Отказ логируем только если файл реально претендовал на роль действия.
+            logger(f"Действие отклонено: {path.name} — {rec.error}")
 
     registry = ActionRegistry(valid, logger)
     registry._all_records = all_records
-    logger(f"Action discovery complete: {len(valid)} active.")
+    logger(f"Обнаружение действий завершено: активно {len(valid)}.")
     return registry

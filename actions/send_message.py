@@ -35,7 +35,7 @@ def _get_os() -> str:
 
 def _require_pyautogui():
     if not _PYAUTOGUI:
-        raise RuntimeError("PyAutoGUI not installed. Run: pip install pyautogui")
+        raise RuntimeError("PyAutoGUI не установлен. Выполните: pip install pyautogui")
 
 
 def _paste_text(text: str) -> None:
@@ -110,7 +110,7 @@ def _open_app(app_name: str) -> bool:
             return launched
 
     except Exception as e:
-        print(f"[SendMessage] ⚠️ Could not open {app_name}: {e}")
+        print(f"[SendMessage] ⚠️ Не удалось открыть {app_name}: {e}")
         return False
 
 
@@ -121,7 +121,7 @@ def _open_browser_url(url: str) -> bool:
         time.sleep(4.0) 
         return True
     except Exception as e:
-        print(f"[SendMessage] ⚠️ Could not open browser: {e}")
+        print(f"[SendMessage] ⚠️ Не удалось открыть браузер: {e}")
         return False
 
 def _search_in_app(query: str) -> None:
@@ -136,7 +136,7 @@ def _search_in_app(query: str) -> None:
 
 def _desktop_send(app_name: str, receiver: str, message: str) -> str:
     if not _open_app(app_name):
-        return f"Could not open {app_name}."
+        return f"Сэр, не удалось открыть {app_name}."
 
     time.sleep(1.0)
     _search_in_app(receiver)
@@ -147,7 +147,7 @@ def _desktop_send(app_name: str, receiver: str, message: str) -> str:
     time.sleep(0.2)
     pyautogui.press("enter")
     time.sleep(0.3)
-    return f"Message sent to {receiver} via {app_name}."
+    return f"Сэр, сообщение для {receiver} отправлено через {app_name}."
 
 def _send_whatsapp(receiver: str, message: str) -> str:
     return _desktop_send("WhatsApp", receiver, message)
@@ -167,7 +167,7 @@ def _send_instagram(receiver: str, message: str) -> str:
     _require_pyautogui()
 
     if not _open_browser_url("https://www.instagram.com/direct/new/"):
-        return "Could not open Instagram in browser."
+        return "Сэр, не удалось открыть Instagram в браузере."
 
     _paste_text(receiver)
     time.sleep(1.5)
@@ -188,14 +188,14 @@ def _send_instagram(receiver: str, message: str) -> str:
     pyautogui.press("enter")
     time.sleep(0.3)
 
-    return f"Message sent to {receiver} via Instagram."
+    return f"Сэр, сообщение для {receiver} отправлено через Instagram."
 
 
 def _send_messenger(receiver: str, message: str) -> str:
     _require_pyautogui()
 
     if not _open_browser_url("https://www.messenger.com/"):
-        return "Could not open Messenger in browser."
+        return "Сэр, не удалось открыть Messenger в браузере."
 
 
     _search_in_app(receiver)
@@ -210,7 +210,7 @@ def _send_messenger(receiver: str, message: str) -> str:
     pyautogui.press("enter")
     time.sleep(0.3)
 
-    return f"Message sent to {receiver} via Messenger."
+    return f"Сэр, сообщение для {receiver} отправлено через Messenger."
 
 _PLATFORM_MAP = [
     ({"whatsapp", "wp", "wapp"},              _send_whatsapp),
@@ -242,11 +242,11 @@ def send_message(
     platform     = params.get("platform", "whatsapp").strip()
 
     if not receiver:
-        return "Please specify a recipient."
+        return "Сэр, укажите получателя."
     if not message_text:
-        return "Please specify the message content."
+        return "Сэр, укажите текст сообщения."
     if not _PYAUTOGUI:
-        return "PyAutoGUI is not installed — cannot control the desktop."
+        return "Сэр, PyAutoGUI не установлен — управлять рабочим столом я не могу."
 
     preview = message_text[:50] + ("…" if len(message_text) > 50 else "")
     print(f"[SendMessage] 📨 {platform} → {receiver}: {preview}")
@@ -257,33 +257,35 @@ def send_message(
         handler = _resolve_platform(platform)
         result  = handler(receiver, message_text)
     except Exception as e:
-        result = f"Could not send message: {e}"
+        result = f"Сэр, не удалось отправить сообщение: {e}"
 
-    print(f"[SendMessage] {'✅' if 'sent' in result.lower() else '❌'} {result}")
+    # Успех определяется по слову в тексте результата ('sent' / 'отправлено').
+    _ok = 'sent' in result.lower() or 'отправлено' in result.lower()
+    print(f"[SendMessage] {'✅' if _ok else '❌'} {result}")
     if player:
         player.write_log(f"[msg] {result}")
 
     return result
 
 
-# ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
+# ── Описание инструмента (авто-обнаружение через core/action_loader.py) ──────
 TOOL = {
     "name": "send_message",
-    "description": "Sends a text message via WhatsApp, Telegram, or other messaging platform.",
+    "description": "Отправляет текстовое сообщение через WhatsApp, Telegram или другую платформу обмена сообщениями.",
     "parameters": {
         "type": "OBJECT",
         "properties": {
             "receiver": {
                 "type": "STRING",
-                "description": "Recipient contact name"
+                "description": "Имя контакта получателя"
             },
             "message_text": {
                 "type": "STRING",
-                "description": "The message to send"
+                "description": "Текст сообщения для отправки"
             },
             "platform": {
                 "type": "STRING",
-                "description": "Platform: WhatsApp, Telegram, etc."
+                "description": "Платформа: WhatsApp, Telegram и т. д."
             }
         },
         "required": [

@@ -1,19 +1,22 @@
 """
-Local wake-word detection for Anfisa ("Привет Анфиса").
+Локальное распознавание слова-активатора для «Анфисы» («Привет Анфиса»).
 
-Design goals:
-  • ZERO cost when the feature is off — openwakeword is imported ONLY inside
-    start()/install helpers, never at module load. If the user never enables
-    wake word, none of this touches the app.
-  • ZERO latency on the audio path — the microphone callback only ever does a
-    cheap, non-blocking queue push (feed()); the actual model inference runs in
-    this module's own background thread, so the real-time audio thread and the
-    Gemini stream are never slowed.
-  • Fully local & offline — audio fed here never leaves the machine; there is no
-    network call except the one-time model download the user triggers from the UI.
+Проектные цели:
+  • НУЛЕВАЯ стоимость, когда функция выключена: openwakeword импортируется
+    ТОЛЬКО внутри start() и вспомогательных функций установки, никогда при
+    импорте модуля. Если пользователь не включает слово-активатор, этот код
+    приложение не затрагивает.
+  • НУЛЕВАЯ задержка на аудиотраектории: колбэк микрофона выполняет только
+    дешёвую неблокирующую запись в очередь (feed()); сам инференс модели
+    работает в отдельном фоновом потоке модуля, поэтому аудиопоток реального
+    времени и стрим Gemini никогда не замедляются.
+  • Полностью локально и офлайн: аудио отсюда никогда не уходит с машины;
+    единственный сетевой запрос — одноразовая загрузка модели, которую
+    запускает сам пользователь из интерфейса.
 
-openwakeword ships small ONNX models (a few MB each) and runs comfortably on a
-CPU. The pretrained wake phrase used here is "Привет Анфиса".
+openwakeword поставляет небольшие ONNX-модели (по несколько МБ каждая) и
+уверенно работает на CPU. Предобученная фраза активатора, которая здесь
+используется, — «Привет Анфиса».
 """
 from __future__ import annotations
 
@@ -24,16 +27,18 @@ import threading
 from pathlib import Path
 from typing import Callable
 
-# Pretrained openwakeword model that listens for "Привет Анфиса".
+# Предобученная модель openwakeword, слушающая «Привет Анфиса».
 WAKE_MODEL = "hey_Anfisa"
-# Score in [0,1]; above this counts as a detection. Tunable per environment.
+# Оценка в диапазоне [0,1]; значение выше неё засчитывается как обнаружение.
+# Подстраивается под конкретное окружение.
 DEFAULT_THRESHOLD = 0.5
-# Mic frames arrive at 16 kHz int16; this is just the detector's input rate.
+# Кадры с микрофона приходят как int16 с частотой 16 кГц; это просто входная
+# частота детектора.
 SAMPLE_RATE = 16000
 
 
 def is_installed() -> bool:
-    """True if the openwakeword package is importable (no model check)."""
+    """Истина, если пакет openwakeword можно импортировать (наличие модели не проверяется)."""
     try:
         import importlib.util
         return importlib.util.find_spec("openwakeword") is not None
@@ -42,12 +47,13 @@ def is_installed() -> bool:
 
 
 def is_ready() -> bool:
-    """True if openwakeword is installed AND its model files are present on disk.
+    """Истина, если openwakeword установлен И файлы моделей есть на диске.
 
-    This is a cheap, DETERMINISTIC file-existence check. It deliberately does NOT
-    construct a Model to probe readiness — doing that is slow and, worse, can clash
-    with the detector's own Model when it's already running, which intermittently
-    returned False and made the UI flicker to 'not downloaded'. Never raises.
+    Это дешёвая ДЕТЕРМИНИРОВАННАЯ проверка существования файлов. Она намеренно
+    НЕ создаёт Model ради зондирования готовности — это медленно и, что хуже,
+    может конфликтовать с собственным Model детектора, когда тот уже работает;
+    из-за чего иногда возвращалось False, и интерфейс мигал статусом
+    «модель не загружена». Никогда не бросает исключений.
     """
     if not is_installed():
         return False
@@ -69,44 +75,46 @@ def is_ready() -> bool:
 
 def install_and_download(logger: Callable[[str], None] = print) -> tuple[bool, str]:
     """
-    One-click setup for the UI button: pip-install openwakeword if missing, then
-    download the wake model. Returns (ok, message). Never raises — every failure
-    is reported through the returned message and the logger.
+    Установка в один клик для кнопки в интерфейсе: при отсутствии ставит
+    openwakeword через pip, затем скачивает модель активатора.
+    Возвращает (ok, message). Никогда не бросает исключений — любой сбой
+    сообщается через возвращаемое сообщение и через logger.
     """
     try:
         if not is_installed():
-            logger("Wake word: installing openwakeword (one-time)…")
+            logger("Слово-активатор: устанавливаю openwakeword (однократно)…")
             r = subprocess.run(
                 [sys.executable, "-m", "pip", "install", "openwakeword"],
                 capture_output=True, text=True,
             )
             if r.returncode != 0:
                 tail = (r.stderr or r.stdout or "").strip().splitlines()[-1:] or [""]
-                return False, f"pip install failed: {tail[0][:160]}"
-        # Download the pretrained melspectrogram/embedding + wake models.
-        logger("Wake word: downloading models…")
+                return False, f"pip install не удался: {tail[0][:160]}"
+        # Скачиваем предобученные melspectrogram/embedding и модель активатора.
+        logger("Слово-активатор: скачиваю модели…")
         try:
             import openwakeword.utils as _u
             try:
                 _u.download_models([WAKE_MODEL])
             except TypeError:
-                _u.download_models()   # older signature downloads the default set
+                _u.download_models()   # старая сигнатура скачивает набор по умолчанию
         except Exception as e:
-            return False, f"model download failed: {e}"
+            return False, f"не удалось скачать модель: {e}"
 
         if not is_ready():
-            return False, "installed, but the wake model could not be loaded."
-        logger("Wake word: ready.")
-        return True, "Wake word installed and ready."
+            return False, "установлено, но модель активатора загрузить не удалось."
+        logger("Слово-активатор: готово.")
+        return True, "Слово-активатор установлен и готов к работе."
     except Exception as e:
-        return False, f"setup error: {e}"
+        return False, f"ошибка настройки: {e}"
 
 
 class WakeWordDetector:
     """
-    Runs the wake model in a dedicated thread. The mic thread calls feed() with
-    raw int16 frames; detections invoke on_detect() (called from this thread —
-    the callback must marshal to whatever loop/UI it needs).
+    Запускает модель активатора в выделенном потоке. Поток микрофона передаёт
+    сюда сырые int16-кадры через feed(); при обнаружении вызывается on_detect()
+    (из этого потока — колбэк должен сам передать управление нужному ему
+    циклу событий или интерфейсу).
     """
 
     def __init__(self, on_detect: Callable[[], None],
@@ -122,27 +130,28 @@ class WakeWordDetector:
         self._ready = False
 
     def start(self) -> bool:
-        """Load the model and spawn the inference thread. Returns True on success.
-        Safe to call again — a no-op if already running. Never raises."""
+        """Загружает модель и запускает поток инференса. True при успехе.
+        Можно вызывать повторно — ничего не делает, если уже запущено.
+        Никогда не бросает исключений."""
         if self._running:
             return True
         try:
             from openwakeword.model import Model
             self._model = Model(wakeword_models=[WAKE_MODEL], inference_framework="onnx")
         except Exception as e:
-            self._logger(f"Wake word: could not load model — {e}")
+            self._logger(f"Слово-активатор: не удалось загрузить модель — {e}")
             self._model = None
             return False
         self._running = True
         self._ready = True
         self._thread = threading.Thread(target=self._loop, daemon=True, name="WakeWordThread")
         self._thread.start()
-        self._logger("Wake word: listening for 'Привет Анфиса'.")
+        self._logger("Слово-активатор: слушаю «Привет Анфиса».")
         return True
 
     def stop(self) -> None:
         self._running = False
-        # unblock the thread if it's waiting on the queue
+        # разблокируем поток, если он ожидает на очереди
         try:
             self._queue.put_nowait(None)
         except Exception:
@@ -155,12 +164,13 @@ class WakeWordDetector:
         return self._ready
 
     def feed(self, frame_int16) -> None:
-        """Called from the mic callback (real-time thread). Must stay cheap and
-        never block — the frame is copied and dropped if the queue is backed up."""
+        """Вызывается из колбэка микрофона (поток реального времени). Должен
+        оставаться дешёвым и никогда не блокироваться — кадр копируется и
+        отбрасывается, если очередь переполнена."""
         if not self._running:
             return
         try:
-            # frame_int16 is a numpy int16 array (possibly 2-D mono) — flatten to 1-D
+            # frame_int16 — numpy-массив int16 (возможно, 2-D моно) — сводим к 1-D
             data = frame_int16[:, 0].copy() if getattr(frame_int16, "ndim", 1) > 1 else frame_int16.copy()
             self._queue.put_nowait(data)
         except queue.Full:
@@ -178,21 +188,21 @@ class WakeWordDetector:
                 scores = self._model.predict(np.asarray(frame, dtype=np.int16))
                 score = 0.0
                 if isinstance(scores, dict):
-                    # match the Anfisa model regardless of exact key suffix
+                    # ищем нужную модель независимо от точного суффикса ключа
                     for k, v in scores.items():
                         if "Anfisa" in k.lower():
                             score = max(score, float(v))
                     if score == 0.0 and scores:
                         score = max(float(v) for v in scores.values())
                 if score >= self._threshold:
-                    # drain any backlog so we don't double-fire on the same utterance
+                    # сливаем накопленную очередь, чтобы не сработать дважды на одной фразе
                     self._drain()
                     try:
                         self._on_detect()
                     except Exception as e:
-                        self._logger(f"Wake word: on_detect error — {e}")
+                        self._logger(f"Слово-активатор: ошибка on_detect — {e}")
             except Exception as e:
-                self._logger(f"Wake word: inference error — {e}")
+                self._logger(f"Слово-активатор: ошибка инференса — {e}")
 
     def _drain(self) -> None:
         try:

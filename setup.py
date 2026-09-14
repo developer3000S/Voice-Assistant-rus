@@ -1,13 +1,14 @@
 """
-Voice Assistant — one-time setup.
+Голосовой помощник — одноразовая установка.
 
-Installs the Python dependencies for THIS operating system only: the OS-specific
-packages in requirements.txt carry `sys_platform` markers, so a macOS or Linux
-user never pulls Windows-only libraries (and vice-versa). Then it fetches the
-Playwright browsers needed for web automation (current-OS builds only).
+Ставит Python-зависимости только для ЭТОЙ операционной системы: у OS-специфичных
+пакетов в requirements.txt есть маркеры `sys_platform`, поэтому пользователь macOS
+или Linux никогда не потянет библиотеки только для Windows (и наоборот). Затем
+скачивает браузеры Playwright, нужные для веб-автоматизации (только сборки для
+текущей ОС).
 
-The optional local wake word ("Привет Анфиса") is NOT installed here — it's a
-one-click, opt-in download from ⚙ → WAKE WORD inside the app.
+Опциональное локальное слово пробуждения («Привет Анфиса») здесь НЕ ставится —
+это загружаемая по одному клику опция, включаемая вручную: ⚙ → WAKE WORD в приложении.
 """
 import platform
 import subprocess
@@ -23,49 +24,52 @@ def _run(label: str, args: list[str]) -> None:
 
 
 def main() -> None:
-    print(f"⚙  Voice Assistant setup — detected OS: {OS or 'unknown'}")
+    print(f"⚙  Установка голосового помощника — определённая ОС: {OS or 'unknown'}")
 
-    # requirements.txt filters OS-specific extras by itself via pip markers.
-    _run("Installing Python dependencies (OS-specific extras auto-filtered)…",
+    # requirements.txt сама отсеивает OS-специфичные пакеты через маркеры pip.
+    _run("Установка Python-зависимостей (OS-специфичные отсеиваются автоматически)…",
          [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
 
-    # Chromium covers Chrome/Edge/Opera/Brave/Vivaldi; Firefox for Firefox.
-    # (Safari automation additionally needs: python -m playwright install webkit)
-    _run("Installing Playwright browsers (chromium + firefox)…",
+    # Chromium покрывает Chrome/Edge/Opera/Brave/Vivaldi; Firefox — для Firefox.
+    # (Автоматизации Safari дополнительно нужно: python -m playwright install webkit)
+    _run("Установка браузеров Playwright (chromium + firefox)…",
          [sys.executable, "-m", "playwright", "install", "chromium", "firefox"])
 
-    # ── OS-specific post-install notes ────────────────────────────────────────
+    # ── Заметки по пост-установке для каждой ОС ───────────────────────────────
     if OS == "Windows":
         try:
             import win32com.client  # noqa: F401
         except ImportError:
             postinstall = Path(sys.executable).parent / "Scripts" / "pywin32_postinstall.py"
             print(
-                "\n⚠️  pywin32 did not register correctly — desktop-shortcut "
-                "creation will use a slower fallback. To fix it, run:\n"
+                "\n⚠️  pywin32 не зарегистрировался как надо — создание ярлыка на "
+                "рабочий стол будет идти через более медленный запасной путь. "
+                "Чтобы исправить, выполните:\n"
                 f'    "{sys.executable}" -m pip install --force-reinstall pywin32\n'
                 f'    "{sys.executable}" "{postinstall}" -install'
             )
     elif OS == "Linux":
         print(
-            "\nℹ️  Linux note — a few voice-controlled OS actions shell out to "
-            "native tools. Install the ones you'll use via your package manager:\n"
-            "    • volume      → pulseaudio-utils   (pactl)\n"
-            "    • brightness  → brightnessctl\n"
-            "    • reminders   → systemd (systemd-run) or 'at'\n"
-            "    • open URLs   → xdg-utils          (xdg-open)"
+            "\nℹ️  Заметка для Linux — часть команд управления системой обращается "
+            "к нативным утилитам. Поставьте те, что будете использовать, через свой "
+            "пакетный менеджер:\n"
+            "    • громкость   → pulseaudio-utils   (pactl)\n"
+            "    • яркость     → brightnessctl\n"
+            "    • напоминания → systemd (systemd-run) или 'at'\n"
+            "    • открытие URL → xdg-utils          (xdg-open)"
         )
     elif OS == "Darwin":
         print(
-            "\nℹ️  macOS note — volume, brightness and reminders use the built-in "
-            "'osascript' / LaunchAgents, so no extra tools are required.\n"
-            "    For Safari automation only: python -m playwright install webkit"
+            "\nℹ️  Заметка для macOS — громкость, яркость и напоминания работают "
+            "через встроенный 'osascript' / LaunchAgents, так что дополнительные "
+            "инструменты не нужны.\n"
+            "    Только для автоматизации Safari: python -m playwright install webkit"
         )
 
-    print("\n✅ Setup complete!")
-    print("   1) Launch it:  python main.py")
-    print("   2) Paste your free Gemini API key when the setup screen appears.")
-    print("   3) (Optional) Enable 'Привет Анфиса' from ⚙ → WAKE WORD.")
+    print("\n✅ Установка завершена!")
+    print("   1) Запустите его:  python main.py")
+    print("   2) Вставьте бесплатный ключ Gemini API, когда появится экран настройки.")
+    print("   3) (Необязательно) Включите «Привет Анфиса» в ⚙ → WAKE WORD.")
 
 
 if __name__ == "__main__":

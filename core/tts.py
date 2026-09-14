@@ -1,9 +1,9 @@
 """
-Text-to-Speech engines for Anfisa XL.
+Движки озвучки (Text-to-Speech) для Anfisa XL.
 
-EdgeTTS     – free Microsoft TTS (internet required, no API key)
-Kokoro      – fully offline neural TTS (~330 MB model)
-ElevenLabs  – cloud API (API key required, best quality)
+EdgeTTS     – бесплатный TTS от Microsoft (нужен интернет, ключ API не требуется)
+Kokoro      – полностью офлайн нейросетевая озвучка (модель ~330 МБ)
+ElevenLabs  – облачный API (нужен ключ API, лучшее качество)
 """
 from __future__ import annotations
 
@@ -18,33 +18,34 @@ import sounddevice as sd
 
 
 
-# USE_TF=0 stops transformers from importing TensorFlow (saves 4-8 s startup).
-# Do NOT set USE_TORCH or USE_JAX explicitly — forcing those values breaks
-# transformers' lazy-loader on certain versions, causing AutoModel and other
-# classes to vanish from the public namespace.  Auto-detection is reliable.
+# USE_TF=0 запрещает transformers импортировать TensorFlow (экономит 4-8 с запуска).
+# НЕ выставляйте USE_TORCH и USE_JAX явно — принудительные значения ломают
+# ленивый загрузчик transformers в отдельных версиях, из-за чего AutoModel и
+# другие классы исчезают из публичного пространства имён. Автоопределение
+# работает надёжно.
 os.environ.setdefault("USE_TF",                 "0")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 
 # ---------------------------------------------------------------------------
-# Audio playback helpers
+# Вспомогательные функции воспроизведения звука
 # ---------------------------------------------------------------------------
 
 def _to_numpy(samples) -> np.ndarray:
-    """Convert samples to float32 numpy array.
+    """Преобразовать отсчёты в numpy-массив float32.
 
-    Handles both numpy arrays and PyTorch tensors (Kokoro >= 0.9).
+    Работает и с numpy-массивами, и с тензорами PyTorch (Kokoro >= 0.9).
 
-    PyTorch built against numpy 1.x raises RuntimeError('Numpy is not available')
-    when numpy 2.x is installed.  The .tolist() fallback always works regardless
-    of PyTorch / numpy version pairing.
+    PyTorch, собранный с numpy 1.x, бросает RuntimeError('Numpy is not available'),
+    когда установлена numpy 2.x. Запасной путь через .tolist() работает всегда,
+    независимо от того, как соотносятся версии PyTorch и numpy.
     """
-    if hasattr(samples, "detach"):                  # PyTorch tensor
+    if hasattr(samples, "detach"):                  # тензор PyTorch
         t = samples.detach().cpu().float()
         try:
-            return t.numpy()                        # fast path (compatible versions)
+            return t.numpy()                        # быстрый путь (совместимые версии)
         except RuntimeError:
-            # PyTorch/numpy version mismatch — convert via Python list (always safe)
+            # Несовпадение версий PyTorch/numpy — конвертируем через список Python (всегда безопасно)
             return np.asarray(t.tolist(), dtype=np.float32)
     return np.asarray(samples, dtype=np.float32)
 
@@ -52,15 +53,15 @@ def _to_numpy(samples) -> np.ndarray:
 def _compress_silence(
     arr: np.ndarray,
     sample_rate: int    = 24_000,
-    max_silence_ms: int = 500,    # cap punctuation pauses — keeps natural rhythm
-    threshold: float    = 0.003,  # RMS below this = silence; lower = less clipping
+    max_silence_ms: int = 500,    # ограничиваем паузы на знаках препинания — сохраняет естественный ритм
+    threshold: float    = 0.003,  # RMS ниже этого = тишина; меньше порог = меньше обрезание
 ) -> np.ndarray:
     """
-    Shorten Kokoro's very long punctuation pauses (1-2 s → ≤500 ms).
-    Conservative settings preserve natural prosody; only trims extreme pauses.
+    Укорачивает очень длинные паузы на знаках препинания у Kokoro (1-2 с → ≤500 мс).
+    Осторожные настройки сохраняют естественную интонацию; обрезаются только крайние паузы.
     """
     max_samp  = int(max_silence_ms * sample_rate / 1000)
-    frame_len = 240                   # ~10 ms at 24 kHz
+    frame_len = 240                   # ~10 мс при 24 кГц
     out: list[np.ndarray] = []
     silent_acc = 0
 
@@ -78,15 +79,15 @@ def _compress_silence(
 
 
 def _play_np(samples, sample_rate: int) -> None:
-    """Play float32 mono (or stereo) audio via sounddevice.
-    Accepts numpy arrays or PyTorch tensors.
+    """Проиграть float32 моно (или стерео) звук через sounddevice.
+    Принимает numpy-массивы и тензоры PyTorch.
     """
     sd.play(_to_numpy(samples), sample_rate)
     sd.wait()
 
 
 def _play_audio_bytes(audio_bytes: bytes) -> None:
-    """Decode MP3/WAV/OGG bytes and play via sounddevice (uses miniaudio)."""
+    """Раскодировать байты MP3/WAV/OGG и проиграть через sounddevice (используется miniaudio)."""
     import miniaudio
     decoded = miniaudio.decode(
         audio_bytes,
@@ -99,11 +100,11 @@ def _play_audio_bytes(audio_bytes: bytes) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Engines
+# Движки
 # ---------------------------------------------------------------------------
 
 class EdgeTTSEngine:
-    """Microsoft EdgeTTS – free, requires internet."""
+    """Microsoft EdgeTTS — бесплатно, нужен интернет."""
 
     def __init__(self, voice: str = "en-US-GuyNeural"):
         self.voice = voice
@@ -128,25 +129,25 @@ class EdgeTTSEngine:
 
 
 # ---------------------------------------------------------------------------
-# Kokoro import helper — auto-upgrades on version-mismatch errors
+# Вспомогательный импорт Kokoro — при ошибке несовместимости версий обновляет сам
 # ---------------------------------------------------------------------------
 
-# Errors that indicate the installed kokoro uses old transformers classes
-# (AlbertModel, AutoModel) that are no longer exported at the top level.
+# Ошибки, которые означают, что установленный kokoro использует старые классы
+# transformers (AlbertModel, AutoModel), больше не экспортируемые на верхнем уровне.
 _KOKORO_COMPAT_ERRORS = ("AlbertModel", "AutoModel", "cannot import name")
 
 
 def _import_kokoro_pipeline():
-    """Import KPipeline, auto-upgrading kokoro if a version mismatch is found.
+    """Импортировать KPipeline, при несовпадении версий автоматически обновив kokoro.
 
-    Old kokoro (<0.9) imports AlbertModel / AutoModel from transformers.
-    Newer transformers versions no longer export these at the top level,
-    causing an ImportError.  kokoro>=0.9 removed these dependencies.
+    Старый kokoro (<0.9) импортирует AlbertModel / AutoModel из transformers.
+    Новые версии transformers больше не экспортируют их с верхнего уровня,
+    что вызывает ImportError. В kokoro>=0.9 эти зависимости убраны.
 
-    When the error is detected we:
-      1. Upgrade kokoro to >=0.9 via pip (silent, background)
-      2. Flush stale kokoro entries from sys.modules
-      3. Re-import — this time it should succeed
+    Когда ошибка распознана, мы:
+      1. Обновляем kokoro до >=0.9 через pip (тихо, в фоне)
+      2. Вычищаем устаревшие записи kokoro из sys.modules
+      3. Повторяем импорт — теперь он должен получиться
     """
     import sys
 
@@ -159,14 +160,14 @@ def _import_kokoro_pipeline():
     except Exception as first_err:
         err_msg = str(first_err)
         if not any(marker in err_msg for marker in _KOKORO_COMPAT_ERRORS):
-            # Unrelated error (kokoro not installed, etc.)
+            # Несвязанная ошибка (kokoro не установлен и т. п.)
             raise RuntimeError(
                 f"Kokoro import failed: {first_err}\n"
                 "Run: pip install kokoro>=0.9 soundfile"
             ) from first_err
 
-        # ── Version mismatch: upgrade kokoro silently and retry ──────────
-        print("[TTS] Kokoro/transformers version mismatch detected — upgrading kokoro…")
+        # ── Несовпадение версий: тихо обновляем kokoro и пробуем снова ──────
+        print("[TTS] Обнаружено несовпадение версий Kokoro/transformers — обновляю kokoro…")
         import subprocess
         result = subprocess.run(
             [sys.executable, "-m", "pip", "install", "kokoro>=0.9",
@@ -180,12 +181,12 @@ def _import_kokoro_pipeline():
                 "Run manually: pip install kokoro>=0.9 soundfile"
             ) from first_err
 
-        # Flush any stale kokoro submodules from the import cache
+        # Вычищаем устаревшие подмодули kokoro из кэша импорта
         stale = [k for k in sys.modules if k == "kokoro" or k.startswith("kokoro.")]
         for key in stale:
             del sys.modules[key]
 
-        print("[TTS] Kokoro upgraded — retrying import…")
+        print("[TTS] Kokoro обновлён — повторяю импорт…")
         try:
             return _try_import()
         except Exception as retry_err:
@@ -195,32 +196,32 @@ def _import_kokoro_pipeline():
             ) from retry_err
 
 
-# Kokoro voice prefix → KPipeline lang_code mapping
+# Префикс голоса Kokoro → соответствие lang_code в KPipeline
 _KOKORO_LANG_CODES = {
-    "a": "a",   # American English  (af_*, am_*)
-    "b": "b",   # British English   (bf_*, bm_*)
-    "j": "j",   # Japanese          (jf_*, jm_*)
-    "z": "z",   # Mandarin Chinese  (zf_*, zm_*)
-    "s": "s",   # Spanish           (sf_*, sm_*)
-    "f": "f",   # French            (ff_*, fm_*)
-    "h": "h",   # Hindi             (hf_*, hm_*)
-    "i": "i",   # Italian           (if_*, im_*)
-    "p": "p",   # Brazilian Portuguese
-    "r": "r",   # Russian           (rf_*, rm_*)
-    "e": "e",   # German            (ef_*, em_*)
+    "a": "a",   # американский английский  (af_*, am_*)
+    "b": "b",   # британский английский   (bf_*, bm_*)
+    "j": "j",   # японский                (jf_*, jm_*)
+    "z": "z",   # китайский (путунхуа)    (zf_*, zm_*)
+    "s": "s",   # испанский               (sf_*, sm_*)
+    "f": "f",   # французский             (ff_*, fm_*)
+    "h": "h",   # хинди                   (hf_*, hm_*)
+    "i": "i",   # итальянский             (if_*, im_*)
+    "p": "p",   # бразильский португальский
+    "r": "r",   # русский                 (rf_*, rm_*)
+    "e": "e",   # немецкий                (ef_*, em_*)
 }
 
 
 class KokoroTTSEngine:
-    """Fully offline Kokoro neural TTS.
+    """Полностью офлайн нейросетевая озвучка Kokoro.
 
-    Model (~330 MB) is downloaded from HuggingFace on first use,
-    then cached locally — subsequent starts load from disk.
+    Модель (~330 МБ) при первом использовании скачивается с HuggingFace,
+    после чего кэшируется локально — дальнейшие запуски идут с диска.
 
-    Warmup strategy: _init() runs synchronously in the background
-    _do_tts() thread (not the UI thread).  After the pipeline loads,
-    a dummy inference compiles the PyTorch JIT graph immediately so
-    the first real speak() call has zero compilation overhead.
+    Стратегия прогрева: _init() выполняется синхронно в фоновом
+    потоке _do_tts() (не в потоке UI).  После загрузки конвейера
+    пробный прогон сразу компилирует JIT-граф PyTorch, так что
+    первый настоящий вызов speak() не тратит время на компиляцию.
     """
 
     def __init__(self, voice: str = "af_heart", speed: float = 1.0):
@@ -228,7 +229,7 @@ class KokoroTTSEngine:
         self.speed     = speed
         self._pipeline = None
         self._lock     = threading.Lock()
-        self._init()   # blocking, but called from background thread
+        self._init()   # блокирующий, но вызывается из фонового потока
 
     @property
     def _lang_code(self) -> str:
@@ -241,7 +242,7 @@ class KokoroTTSEngine:
 
         lang = self._lang_code
 
-        # Prefer GPU — Kokoro on CUDA is ~10x faster than CPU.
+        # Предпочитаем GPU — Kokoro на CUDA примерно в 10 раз быстрее, чем на CPU.
         try:
             import torch
             device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -254,13 +255,13 @@ class KokoroTTSEngine:
                 except RuntimeError:
                     pass
                 print(
-                    f"[TTS] Kokoro on CPU — for faster speech install CUDA PyTorch:\n"
+                    f"[TTS] Kokoro работает на CPU — чтобы речь была быстрее, поставьте PyTorch с CUDA:\n"
                     "      pip install torch --index-url https://download.pytorch.org/whl/cu118"
                 )
         except Exception:
             device = "cpu"
 
-        print(f"[TTS] Kokoro — loading (lang='{lang}', device='{device}')…")
+        print(f"[TTS] Kokoro — загрузка (lang='{lang}', device='{device}')…")
 
         KPipeline = _import_kokoro_pipeline()
 
@@ -268,20 +269,22 @@ class KokoroTTSEngine:
             try:
                 return KPipeline(lang_code=lang, device=device)
             except TypeError:
-                return KPipeline(lang_code=lang)   # older build — no device param
+                return KPipeline(lang_code=lang)   # старая сборка — нет параметра device
 
         try:
             self._pipeline = _create_pipeline()
         except Exception as _first_err:
-            # Offline flag set but model not cached yet → clear flags and download once.
-            # Keywords cover multiple huggingface_hub error message variants across versions.
+            # Флаг офлайн-режима стоит, но модель ещё не в кэше → снимаем флаги
+            # и один раз скачиваем.
+            # Ключевые слова покрывают несколько вариантов сообщений об ошибке
+            # huggingface_hub в разных версиях.
             _e = str(_first_err).lower()
             _offline_keywords = (
                 "offline", "not found", "cache", "localentry",
                 "does not exist", "outgoing", "local_files_only",
             )
             if any(k in _e for k in _offline_keywords):
-                print("[TTS] Kokoro model not in local cache — downloading (one-time, internet required)…")
+                print("[TTS] Модели Kokoro нет в локальном кэше — скачиваю (один раз, нужен интернет)…")
                 os.environ.pop("HF_HUB_OFFLINE",      None)
                 os.environ.pop("TRANSFORMERS_OFFLINE", None)
                 os.environ.pop("HF_DATASETS_OFFLINE",  None)
@@ -289,35 +292,35 @@ class KokoroTTSEngine:
                     self._pipeline = _create_pipeline()
                 except Exception as _dl_err:
                     raise RuntimeError(
-                        f"Kokoro model download failed.\n"
-                        f"Internet access is required the first time to download the voice model (~330 MB).\n"
-                        f"After the first download it runs fully offline.\n"
-                        f"Tip: Switch to EdgeTTS (free, no download) in the Configure panel if offline.\n"
-                        f"Details: {_dl_err}"
+                        f"Не удалось скачать модель Kokoro.\n"
+                        f"При первом запуске нужен интернет, чтобы скачать модель голоса (~330 МБ).\n"
+                        f"После первого скачивания работает полностью офлайн.\n"
+                        f"Совет: если интернета нет, переключитесь на EdgeTTS (бесплатно, без скачивания) в панели настройки.\n"
+                        f"Подробности: {_dl_err}"
                     ) from _dl_err
             else:
                 raise
 
-        print("[TTS] Kokoro compiling (first-time only)…")
-        # Warmup: compiles PyTorch JIT graph so first real speak() call is instant.
+        print("[TTS] Kokoro компилируется (только в первый раз)…")
+        # Прогрев: компилирует JIT-граф PyTorch, чтобы первый настоящий speak() был мгновенным.
         try:
             for _ in self._pipeline("hello", voice=self.voice, speed=self.speed):
                 pass
-            print("[TTS] Kokoro ready.")
+            print("[TTS] Kokoro готов.")
         except Exception as e:
-            print(f"[TTS] Kokoro warmup warning: {e}")
+            print(f"[TTS] Предупреждение прогрева Kokoro: {e}")
 
     def speak(self, text: str) -> None:
         with self._lock:
             if self._pipeline is None:
                 self._init()
 
-        # ── Concurrent synthesise + playback ────────────────────────────────
-        # Kokoro generates audio chunks lazily.  Without threading, we:
-        #   synthesise chunk N → play N → synthesise N+1 → play N+1 …
-        # With a producer/consumer pair, chunk N+1 synthesises WHILE chunk N
-        # plays, cutting perceived latency by the playback duration of all but
-        # the last chunk (typically 1-3 s on multi-sentence responses).
+        # ── Одновременные синтез и воспроизведение ──────────────────────────
+        # Kokoro выдаёт куски аудио лениво. Без потоков у нас:
+        #   синтез куска N → играть N → синтез N+1 → играть N+1 …
+        # В паре «производитель/потребитель» кусок N+1 синтезируется ПОКА играет
+        # кусок N, что сокращает ощущаемую задержку на длительность воспроизведения
+        # всех кусков, кроме последнего (обычно 1-3 с на ответах из нескольких фраз).
         audio_q: "_queue.Queue[np.ndarray | None]" = _queue.Queue(maxsize=4)
         synth_error: list[Exception] = []
 
@@ -328,16 +331,16 @@ class KokoroTTSEngine:
                         arr = _to_numpy(audio)
                         arr = _compress_silence(arr)
                         if arr.size > 0:
-                            audio_q.put(arr)          # blocks if player is slow (backpressure)
+                            audio_q.put(arr)          # блокируется, если проигрыватель отстал (обратное давление)
             except Exception as exc:
                 synth_error.append(exc)
             finally:
-                audio_q.put(None)                     # sentinel → player exits
+                audio_q.put(None)                     # страж-маркер → проигрыватель завершается
 
         synth_thread = threading.Thread(target=_synth, daemon=True)
         synth_thread.start()
 
-        # Player runs in this thread so sd.wait() doesn't block the synth thread.
+        # Проигрыватель работает в этом потоке, чтобы sd.wait() не блокировал поток синтеза.
         while True:
             arr = audio_q.get()
             if arr is None:
@@ -351,7 +354,7 @@ class KokoroTTSEngine:
 
 
 class ElevenLabsTTSEngine:
-    """ElevenLabs cloud TTS – API key required."""
+    """Облачная озвучка ElevenLabs — нужен ключ API."""
 
     def __init__(self, api_key: str, voice_id: str = "pNInz6obpgDQGcFmaJgB"):
         self.api_key  = api_key
@@ -377,13 +380,13 @@ class ElevenLabsTTSEngine:
 
 
 # ---------------------------------------------------------------------------
-# Thread-safe player wrapper
+# Потокобезопасная обёртка проигрывателя
 # ---------------------------------------------------------------------------
 
 class TTSPlayer:
     """
-    Wraps any *Engine. Exposes a blocking speak() method
-    meant to be called from a dedicated background thread.
+    Оборачивает любой *Engine. Отдаёт блокирующий speak(), который нужно
+    вызывать из отдельного фонового потока.
     """
 
     def __init__(self, engine):
@@ -401,7 +404,7 @@ class TTSPlayer:
         on_start: Optional[Callable] = None,
         on_done:  Optional[Callable] = None,
     ) -> None:
-        """Synthesise and play text. BLOCKING – call from a dedicated thread."""
+        """Синтезировать и произнести текст. БЛОКИРУЮЩИЙ — вызывать из отдельного потока."""
         try:
             with self._lock:
                 self._playing = True
@@ -409,7 +412,7 @@ class TTSPlayer:
                 on_start()
             self._engine.speak(text)
         except Exception as e:
-            print(f"[TTS] Error: {e}")
+            print(f"[TTS] Ошибка: {e}")
         finally:
             with self._lock:
                 self._playing = False
@@ -423,7 +426,7 @@ class TTSPlayer:
 
 
 # ---------------------------------------------------------------------------
-# Factory
+# Фабрика
 # ---------------------------------------------------------------------------
 
 def create_tts_player(config: dict) -> TTSPlayer:
@@ -436,7 +439,7 @@ def create_tts_player(config: dict) -> TTSPlayer:
         api_key  = config.get("elevenlabs_api_key", "")
         voice_id = config.get("tts_voice", "pNInz6obpgDQGcFmaJgB")
         engine   = ElevenLabsTTSEngine(api_key=api_key, voice_id=voice_id)
-    else:   # edgetts (default)
+    else:   # edgetts (по умолчанию)
         voice  = config.get("tts_voice", "en-US-GuyNeural")
         engine = EdgeTTSEngine(voice=voice)
     return TTSPlayer(engine)

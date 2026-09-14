@@ -71,7 +71,7 @@ def _open_url(url: str) -> None:
         else:
             subprocess.Popen(["cmd", "/c", "start", "", url], shell=False)
     except Exception as e:
-        print(f"[YouTube] ⚠️ open_url failed: {e}")
+        print(f"[YouTube] ⚠️ Не удалось открыть ссылку: {e}")
 
 def _scrape_first_video_url(query: str) -> str | None:
 
@@ -101,7 +101,7 @@ def _scrape_first_video_url(query: str) -> str | None:
             return f"https://www.youtube.com/watch?v={vid}"
 
     except Exception as e:
-        print(f"[YouTube] ⚠️ scrape_first_video_url failed: {e}")
+        print(f"[YouTube] ⚠️ Не удалось найти первое видео: {e}")
 
     return None
 
@@ -116,7 +116,7 @@ def _is_valid_youtube_url(url: str) -> bool:
     return bool(re.search(r"(youtube\.com|youtu\.be)", url or ""))
 
 
-def _ask_for_url(prompt_text: str = "YouTube video URL:") -> str | None:
+def _ask_for_url(prompt_text: str = "URL видео на YouTube:") -> str | None:
     try:
         import tkinter as tk
         from tkinter import simpledialog
@@ -129,7 +129,7 @@ def _ask_for_url(prompt_text: str = "YouTube video URL:") -> str | None:
         url = simpledialog.askstring("ANFISA", prompt_text, parent=root)
         return url.strip() if url else None
     except Exception as e:
-        print(f"[YouTube] ⚠️ URL dialog failed: {e}")
+        print(f"[YouTube] ⚠️ Не удалось показать диалог ввода URL: {e}")
         return None
 
 
@@ -162,7 +162,7 @@ def _get_transcript(video_id: str) -> str | None:
         return " ".join(entry["text"] for entry in fetched)
 
     except Exception as e:
-        print(f"[YouTube] ⚠️ Transcript fetch failed: {e}")
+        print(f"[YouTube] ⚠️ Не удалось получить субтитры: {e}")
         return None
 
 
@@ -175,14 +175,14 @@ def _summarize_with_gemini(transcript: str, video_url: str) -> str:
     truncated = transcript[:max_chars] + ("..." if len(transcript) > max_chars else "")
     response  = _client.models.generate_content(
         model="gemini-flash-latest",
-        contents=f"Please summarize this YouTube video transcript:\n\n{truncated}",
+        contents=f"Сделай краткое содержание этой расшифровки видео с YouTube:\n\n{truncated}",
         config=types.GenerateContentConfig(
             system_instruction=(
-                "You are Anfisa, an AI assistant. "
-                "Summarize YouTube video transcripts clearly and concisely. "
-                "Structure: 1-sentence overview, then 3-5 key points. "
-                "Be direct. Address the user as 'sir'. "
-                "Match the language of the transcript."
+                "Ты — Анфиса, ассистент на основе ИИ. "
+                "Кратко и понятно пересказывай расшифровки видео с YouTube. "
+                "Структура: общий обзор в 1 предложение, затем 3-5 ключевых пунктов. "
+                "Говори прямо по делу. Обращайся к пользователю «сэр». "
+                "Отвечай на языке исходной расшифровки."
             )
         )
     )
@@ -197,10 +197,10 @@ def _save_summary(content: str, video_url: str) -> str:
     filepath = desktop / filename
 
     header = (
-        f"Anfisa — YouTube Summary\n"
+        f"Анфиса — краткое содержание видео с YouTube\n"
         f"{'─' * 50}\n"
-        f"URL    : {video_url}\n"
-        f"Date   : {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
+        f"Ссылка : {video_url}\n"
+        f"Дата   : {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
         f"{'─' * 50}\n\n"
     )
     filepath.write_text(header + content, encoding="utf-8")
@@ -213,7 +213,7 @@ def _save_summary(content: str, video_url: str) -> str:
         else:
             subprocess.Popen(["xdg-open", str(filepath)])
     except Exception as e:
-        print(f"[YouTube] ⚠️ Could not open text editor: {e}")
+        print(f"[YouTube] ⚠️ Не удалось открыть текстовый редактор: {e}")
 
     return str(filepath)
 
@@ -247,7 +247,7 @@ def _scrape_video_info(video_id: str) -> dict:
 
         return info
     except Exception as e:
-        print(f"[YouTube] ⚠️ Info scrape failed: {e}")
+        print(f"[YouTube] ⚠️ Не удалось получить данные о видео: {e}")
         return {}
 
 
@@ -267,80 +267,80 @@ def _scrape_trending(region: str = "TR", max_results: int = 8) -> list[dict]:
             if title in seen or len(title) < 5:
                 continue
             seen.add(title)
-            channel = channels[i] if i < len(channels) else "Unknown"
+            channel = channels[i] if i < len(channels) else "неизвестный канал"
             results.append({"rank": len(results) + 1, "title": title, "channel": channel})
             if len(results) >= max_results:
                 break
 
         return results
     except Exception as e:
-        print(f"[YouTube] ⚠️ Trending scrape failed: {e}")
+        print(f"[YouTube] ⚠️ Не удалось получить тренды: {e}")
         return []
 
 def _handle_play(parameters: dict, player) -> str:
     query = parameters.get("query", "").strip()
     if not query:
-        return "Please tell me what you'd like to watch, sir."
+        return "Сэр, скажите, что именно вы хотите посмотреть."
 
     if player:
-        player.write_log(f"[YouTube] Searching: {query}")
+        player.write_log(f"[YouTube] Поиск: {query}")
 
-    print(f"[YouTube] 🔍 Scraping first non-Shorts video for: {query}")
+    print(f"[YouTube] 🔍 Ищу первое видео не-Shorts по запросу: {query}")
 
     video_url = _scrape_first_video_url(query)
 
     if video_url:
-        print(f"[YouTube] ▶️ Opening: {video_url}")
+        print(f"[YouTube] ▶️ Открываю: {video_url}")
         _open_url(video_url)
-        return f"Playing: {query}"
+        return f"Сэр, включаю: {query}"
 
-    print(f"[YouTube] ⚠️ Scrape failed, opening filtered search page")
+    print(f"[YouTube] ⚠️ Не удалось найти видео, открываю страницу поиска с фильтром")
     fallback_url = (
         f"https://www.youtube.com/results"
         f"?search_query={quote_plus(query)}"
         f"&sp={_YT_VIDEO_FILTER}"
     )
     _open_url(fallback_url)
-    return f"Opened YouTube search for: {query} (manual selection required)"
+    return f"Сэр, открыт поиск на YouTube по запросу: {query} — выберите видео вручную"
 
 
 def _handle_summarize(parameters: dict, player, speak) -> str:
     if not _TRANSCRIPT_OK:
-        return "youtube-transcript-api is not installed. Run: pip install youtube-transcript-api"
+        return "Модуль youtube-transcript-api не установлен. Выполните: pip install youtube-transcript-api"
 
-    url = _ask_for_url("Please paste the YouTube video URL:")
+    url = _ask_for_url("Сэр, вставьте ссылку на видео YouTube:")
     if not url:
-        return "No URL provided, sir. Summary cancelled."
+        return "Сэр, ссылка не указана. Краткое содержание отменено."
     if not _is_valid_youtube_url(url):
-        return "That doesn't appear to be a valid YouTube URL, sir."
+        return "Сэр, это не похоже на корректную ссылку YouTube."
 
     video_id = _extract_video_id(url)
     if not video_id:
-        return "Could not extract video ID from that URL, sir."
+        return "Сэр, не удалось извлечь ID видео из этой ссылки."
 
     if player:
-        player.write_log(f"[YouTube] Summarizing: {url}")
+        player.write_log(f"[YouTube] Краткое содержание: {url}")
     if speak:
-        speak("Fetching the transcript now, sir. One moment.")
+        speak("Сэр, сейчас загружаю субтитры. Минуту.")
 
     transcript = _get_transcript(video_id)
     if not transcript:
-        return "I couldn't retrieve a transcript for that video, sir."
+        return "Сэр, для этого видео не удалось получить субтитры."
 
     if speak:
-        speak("Transcript retrieved. Generating summary now.")
+        speak("Субтитры получены. Сейчас формирую краткое содержание.")
 
     try:
         summary = _summarize_with_gemini(transcript, url)
     except Exception as e:
-        return f"Summary generation failed, sir: {e}"
+        return f"Сэр, не удалось создать краткое содержание: {e}"
 
     if speak:
         speak(summary)
 
     if parameters.get("save", False):
         saved_path = _save_summary(summary, url)
-        return f"Summary complete and saved to Desktop: {saved_path}"
+        return f"Сэр, краткое содержание готово и сохранено на Рабочем столе: {saved_path}"
 
     return summary
 
@@ -348,30 +348,38 @@ def _handle_summarize(parameters: dict, player, speak) -> str:
 def _handle_get_info(parameters: dict, player, speak) -> str:
     url = parameters.get("url", "").strip()
     if not url:
-        url = _ask_for_url("Please paste the YouTube video URL:")
+        url = _ask_for_url("Сэр, вставьте ссылку на видео YouTube:")
     if not url or not _is_valid_youtube_url(url):
-        return "Please provide a valid YouTube URL, sir."
+        return "Сэр, укажите корректную ссылку на видео YouTube."
 
     video_id = _extract_video_id(url)
     if not video_id:
-        return "Could not extract video ID, sir."
+        return "Сэр, не удалось извлечь ID видео."
 
     if player:
-        player.write_log(f"[YouTube] Getting info: {url}")
+        player.write_log(f"[YouTube] Данные видео: {url}")
 
     info = _scrape_video_info(video_id)
     if not info:
-        return "Could not retrieve video information, sir."
+        return "Сэр, не удалось получить информацию о видео."
 
+    # Подписи для вывода; ключи info остаются прежними
+    labels = {
+        "title":    "Название",
+        "channel":  "Канал",
+        "views":    "Просмотры",
+        "duration": "Длительность",
+        "likes":    "Лайки",
+    }
     lines = [
-        f"{key.capitalize()}: {info[key]}"
+        f"{labels[key]}: {info[key]}"
         for key in ("title", "channel", "views", "duration", "likes")
         if key in info
     ]
     result = "\n".join(lines)
 
     if speak:
-        speak(f"Here's the video info, sir. {result.replace(chr(10), '. ')}")
+        speak(f"Сэр, вот данные о видео. {result.replace(chr(10), '. ')}")
 
     return result
 
@@ -380,20 +388,20 @@ def _handle_trending(parameters: dict, player, speak) -> str:
     region = parameters.get("region", "TR").upper()
 
     if player:
-        player.write_log(f"[YouTube] Trending: {region}")
+        player.write_log(f"[YouTube] Тренды: {region}")
 
     trending = _scrape_trending(region=region, max_results=8)
     if not trending:
-        return f"Could not fetch trending videos for region {region}, sir."
+        return f"Сэр, не удалось загрузить трендовые видео для региона {region}."
 
-    lines  = [f"Top trending videos in {region}:"]
+    lines  = [f"Топ трендовых видео в регионе {region}:"]
     lines += [f"{v['rank']}. {v['title']} — {v['channel']}" for v in trending]
     result = "\n".join(lines)
 
     if speak:
         top3   = trending[:3]
-        spoken = "Here are the top trending videos, sir. " + ". ".join(
-            f"Number {v['rank']}: {v['title']} by {v['channel']}" for v in top3
+        spoken = "Сэр, вот лучшие трендовые видео. " + ". ".join(
+            f"Номер {v['rank']}: {v['title']}, канал {v['channel']}" for v in top3
         )
         speak(spoken)
 
@@ -418,29 +426,29 @@ def youtube_video(
     action = params.get("action", "play").lower().strip()
 
     if player:
-        player.write_log(f"[YouTube] Action: {action}")
-    print(f"[YouTube] ▶️  Action: {action}  Params: {params}")
+        player.write_log(f"[YouTube] Действие: {action}")
+    print(f"[YouTube] ▶️  Действие: {action}  Параметры: {params}")
 
     handler = _ACTION_MAP.get(action)
     if handler is None:
         return (
-            f"Unknown YouTube action: '{action}'. "
-            "Available: play, summarize, get_info, trending."
+            f"Неизвестное действие YouTube: '{action}'. "
+            "Доступны: play, summarize, get_info, trending."
         )
 
     try:
         if action == "play":
-            return handler(params, player) or "Done."
-        return handler(params, player, speak) or "Done."
+            return handler(params, player) or "Готово."
+        return handler(params, player, speak) or "Готово."
     except Exception as e:
-        print(f"[YouTube] ❌ Error in {action}: {e}")
-        return f"YouTube {action} failed, sir: {e}"
+        print(f"[YouTube] ❌ Ошибка в {action}: {e}")
+        return f"Сэр, действие YouTube {action} не выполнено: {e}"
 
 
-# ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
+# ── Описание инструмента (авто-обнаружение через core/action_loader.py) ──────
 TOOL = {
     "name": "youtube_video",
-    "description": "Controls YouTube. Use for: playing videos, summarizing a video's content, getting video info, or showing trending videos.",
+    "description": "Управляет YouTube. Применяй для: воспроизведения видео, краткого содержания видео, получения данных о видео или показа трендовых видео.",
     "parameters": {
         "type": "OBJECT",
         "properties": {
@@ -450,19 +458,19 @@ TOOL = {
             },
             "query": {
                 "type": "STRING",
-                "description": "Search query for play action"
+                "description": "Поисковый запрос для действия play"
             },
             "save": {
                 "type": "BOOLEAN",
-                "description": "Save summary to Notepad (summarize only)"
+                "description": "Сохранить краткое содержание в Notepad (только summarize)"
             },
             "region": {
                 "type": "STRING",
-                "description": "Country code for trending e.g. TR, US"
+                "description": "Код страны для трендов, напр. TR, US"
             },
             "url": {
                 "type": "STRING",
-                "description": "Video URL for get_info action"
+                "description": "Ссылка на видео для действия get_info"
             }
         },
         "required": []

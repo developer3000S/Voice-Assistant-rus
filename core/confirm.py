@@ -1,36 +1,36 @@
 """
-core/confirm.py — a confirmation the model cannot forge.
+core/confirm.py — подтверждение, которое модель не может подделать.
 
-THE PROBLEM WITH THE OLD GATE
-    computer_settings guarded shutdown and restart like this:
+ЧЕМ ПЛОХА БЫЛА СТАРАЯ ЗАЩИТА
+    computer_settings закрывал shutdown и restart так:
 
         confirmed = str(params.get("confirmed", "")).lower()
         if confirmed not in ("yes", "true", "1", "confirm"):
             return "Please confirm by calling again with confirmed=yes."
 
-    `confirmed` is a tool parameter, which means the *model* writes it. Nothing
-    stops it from sending confirmed=yes on the first call, and nothing checks
-    that a human was ever involved. It is a convention, not a gate — and its
-    coverage was two actions, so deleting files and switching off the WiFi the
-    assistant is talking over went through with no gate at all.
+    `confirmed` — это параметр инструмента, а значит пишет его *модель*. Ничто не
+    мешает ей прислать confirmed=yes уже в первом вызове, и ничто не проверяет,
+    что вообще был человек. Это договорённость, а не шлюз — и прикрывал он два
+    действия, так что удаление файлов и выключение WiFi, поверх которого
+    ассистент разговаривает, проходили вообще без всякой защиты.
 
-THE DESIGN HERE
-    The confirmation token is issued by the *interface*, never by the model:
+КАК УСТРОЕНО ЗДЕСЬ
+    Токен подтверждения выдаёт *интерфейс*, никогда — модель:
 
-      1. An action calls `request(...)` with a callable that does the real work.
-      2. This module hands the UI a banner with CONFIRM / CANCEL and returns
-         IMMEDIATELY with a sentence for the model to say out loud.
-      3. If — and only if — the user presses CONFIRM, the UI calls `resolve()`,
-         which runs the stored callable off the Qt thread.
+      1. Действие вызывает `request(...)` с callable, который делает настоящую работу.
+      2. Этот модуль отдаёт в UI баннер с CONFIRM / CANCEL и МГНОВЕННО возвращает
+         фразу, которую модели надо сказать вслух.
+      3. Если — и только если — пользователь нажимает CONFIRM, UI вызывает
+         `resolve()`, который выполняет сохранённый callable вне Qt-потока.
 
-    Nothing blocks. The model keeps talking while the banner is up, so this
-    costs no latency at all; in fact it is cheaper than the old gate, which
-    burned two tool round trips (reject, then re-call) on every shutdown.
+    Ничего не блокируется. Модель продолжает говорить, пока висит баннер, поэтому
+    задержка нулевая; более того, это дешевле старой защиты, которая на каждом
+    shutdown сжигала два круговых пути инструмента (отказ, затем повторный вызов).
 
-WHAT BELONGS HERE AND WHAT DOES NOT
-    Only genuinely irreversible things. Anything that can be reversed should be
-    done at once and pushed onto core/undo.py instead — undo is faster than a
-    question, and an assistant that asks before every action is one nobody uses.
+ЧТО ЗДЕСЬ К МЕСТУ, А ЧТО НЕТ
+    Только по-настоящему необратимое. Всё, что можно отменить, надо делать сразу
+    и складывать в core/undo.py — отмена быстрее вопроса, а ассистент, который
+    спрашивает перед каждым действием, никому не нужен.
 """
 
 from __future__ import annotations
@@ -40,9 +40,9 @@ import time
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-# A pending confirmation is abandoned after this long. Chosen to outlast a
-# normal "hang on, let me look at the screen" pause without leaving a live
-# shutdown button sitting on the HUD for the rest of the day.
+# Незавершённое подтверждение сбрасывается через столько секунд. Столько
+# выбрано, чтобы пережить обычную паузу «подожди, я посмотрю на экран», но не
+# оставить живую кнопку выключения на HUD на весь остаток дня.
 TIMEOUT_SECONDS = 90.0
 
 
@@ -58,15 +58,15 @@ class _Pending:
 _pending: Optional[_Pending] = None
 _lock = threading.Lock()
 
-# Set once at startup by main.py. Signature: (title, detail) -> None for show,
-# and () -> None for hide. Both are marshalled onto the Qt thread by the UI.
+# Устанавливается один раз при запуске в main.py. Сигнатура: (title, detail) -> None
+# для показа и () -> None для скрытия. Оба переносятся в Qt-поток средствами UI.
 _show_cb: Optional[Callable[[str, str], None]] = None
 _hide_cb: Optional[Callable[[], None]] = None
 _log_cb:  Optional[Callable[[str], None]] = None
 
 
 def bind(show, hide, log=None) -> None:
-    """Wire this module to the HUD. Called once from main.py at startup."""
+    """Подключить этот модуль к HUD. Вызывается один раз из main.py при запуске."""
     global _show_cb, _hide_cb, _log_cb
     _show_cb, _hide_cb, _log_cb = show, hide, log
 
@@ -80,18 +80,18 @@ def _log(msg: str) -> None:
 
 
 def request(key: str, title: str, detail: str, run: Callable[[], str]) -> str:
-    """Park an irreversible action behind the on-screen gate.
+    """Поставить необратимое действие за экранный шлюз.
 
-    Returns the sentence the tool should hand back to the model — phrased as an
-    instruction so the assistant asks the user out loud in their own language,
-    rather than reading an English string verbatim."""
+    Возвращает фразу, которую инструмент должен вернуть модели — она сформулирована
+    как указание, чтобы ассистент попросил пользователя вслух на его языке,
+    а не зачитывал английскую строку дословно."""
     global _pending
 
     if _show_cb is None:
-        # No interface bound (headless, or a very early call). Refuse rather
-        # than silently performing something irreversible.
-        return (f"I cannot confirm '{title}' right now because the interface is "
-                f"not available, so I have not done it.")
+        # Интерфейс не подключён (headless либо очень ранний вызов). Отказываем,
+        # а не молча выполняем то, что необратимо.
+        return (f"Сэр, я не могу сейчас запросить подтверждение «{title}»: интерфейс "
+                f"недоступен, поэтому я ничего не делала.")
 
     with _lock:
         _pending = _Pending(key=key, title=title, detail=detail,
@@ -102,22 +102,22 @@ def request(key: str, title: str, detail: str, run: Callable[[], str]) -> str:
     except Exception as e:
         with _lock:
             _pending = None
-        return f"Could not ask for confirmation: {e}. Nothing was done."
+        return f"Не удалось запросить подтверждение: {e}. Ничего не выполнено."
 
-    _log(f"SYS: Awaiting confirmation — {title}")
+    _log(f"SYS: Ожидание подтверждения — {title}")
     return (
-        f"[CONFIRMATION_PENDING] I have put a confirmation on screen for: {title}. "
-        f"Say ONE short sentence in the user's own language telling them you need "
-        f"them to confirm it on the HUD before you do it. Do not claim it is done."
+        f"[CONFIRMATION_PENDING] Я вывела подтверждение на экран для: {title}. "
+        f"Скажи ОДНО короткое предложение на языке пользователя, попросив его "
+        f"подтвердить на HUD, прежде чем это будет сделано. Не утверждай, что уже готово."
     )
 
 
 def resolve(accepted: bool) -> None:
-    """Called by the UI when the user presses CONFIRM or CANCEL.
+    """Вызывается UI, когда пользователь нажимает CONFIRM или CANCEL.
 
-    Runs the stored callable on a worker thread — this is invoked from the Qt
-    thread, and shutting the machine down from inside a button handler would
-    freeze the interface on its way out."""
+    Выполняет сохранённый callable в рабочем потоке — вызов идёт из Qt-потока,
+    а выключать машину из обработчика кнопки означало бы заморозить интерфейс
+    на выходе."""
     global _pending
 
     with _lock:
@@ -133,26 +133,26 @@ def resolve(accepted: bool) -> None:
         return
 
     if time.monotonic() - p.at > TIMEOUT_SECONDS:
-        _log(f"SYS: Confirmation expired — {p.title}")
+        _log(f"SYS: Подтверждение устарело — {p.title}")
         return
 
     if not accepted:
-        _log(f"SYS: Cancelled — {p.title}")
+        _log(f"SYS: Отменено — {p.title}")
         return
 
     def _worker():
         try:
-            result = p.run() or "Done."
-            _log(f"SYS: Confirmed — {p.title}. {result}")
+            result = p.run() or "Готово."
+            _log(f"SYS: Подтверждено — {p.title}. {result}")
         except Exception as e:
-            _log(f"ERR: {p.title} failed — {e}")
+            _log(f"ERR: {p.title} не выполнено — {e}")
 
     threading.Thread(target=_worker, daemon=True,
                      name=f"confirm-{p.key}").start()
 
 
 def pending_title() -> str:
-    """'' when nothing is waiting. Lets an action avoid stacking two banners."""
+    """'' если ничего не ожидает. Позволяет действию не накладывать два баннера."""
     with _lock:
         if _pending is None:
             return ""

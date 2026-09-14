@@ -1,47 +1,47 @@
-# ── Core: UI, audio, Gemini Live ──────────────────────────────────────────────
+# ── Основа: интерфейс, звук, Gemini Live ──────────────────────────────────────
 PyQt6
 sounddevice
 numpy
 google-genai>=2.8.0
 
-# ── Web search & browser control ──────────────────────────────────────────────
+# ── Поиск в сети и управление браузером ───────────────────────────────────────
 requests
 beautifulsoup4
 duckduckgo-search
 playwright
 
-# ── Automation / input control ────────────────────────────────────────────────
+# ── Автоматизация / управление вводом ─────────────────────────────────────────
 pyautogui
 pyperclip
 pygetwindow
 
-# ── Vision & media ────────────────────────────────────────────────────────────
+# ── Компьютерное зрение и медиа ───────────────────────────────────────────────
 pillow
 opencv-python
 mss
 
-# ── System, files & documents ─────────────────────────────────────────────────
+# ── Система, файлы и документы ────────────────────────────────────────────────
 psutil
 send2trash
 youtube-transcript-api
 python-pptx
 openpyxl
 
-# ── Remote dashboard (control from your phone) ────────────────────────────────
+# ── Удалённый дашборд (управление с телефона) ─────────────────────────────────
 fastapi
 uvicorn[standard]
 cryptography
 python-multipart
 qrcode[pil]
 
-# ── Plugin extras: Gmail / Google Calendar (OAuth) ────────────────────────────
+# ── Дополнения плагинов: Gmail / Google Календарь (OAuth) ─────────────────────
 google-api-python-client
 google-auth-oauthlib
 
-# ── Plugin extras: Tuya / Smart Life smart light (home_assistant) ─────────────
+# ── Дополнения плагинов: Tuya / Smart Life (умный свет, home_assistant) ───────
 tinytuya
 
-# ── Windows-only (pip skips these automatically on macOS / Linux) ─────────────
+# ── Только Windows (pip пропускает их на macOS / Linux автоматически) ─────────
 comtypes;   sys_platform == "win32"
 pycaw;      sys_platform == "win32"
 win10toast; sys_platform == "win32"
@@ -49,11 +49,11 @@ pywinauto;  sys_platform == "win32"
 pywin32;    sys_platform == "win32"
 wmi;        sys_platform == "win32"
 
-# ── Optional: local wake word ("Привет Анфиса") ──────────────────────────────────
-# Deliberately NOT installed by default — it's opt-in. Enable it (and download
-# the tiny model) with one click from ⚙ → WAKE WORD in the app, or install it
-# yourself with:  pip install openwakeword
+# ── Опционально: локальное слово пробуждения ("Привет Анфиса") ───────────────────
+# Намеренно НЕ устанавливается по умолчанию — это включается вручную. Активируйте
+# (и скачайте крошечную модель) в один клик из ⚙ → WAKE WORD в приложении, либо
+# установите сами командой:  pip install openwakeword
 #
-# macOS / Linux OS actions (volume, brightness, reminders) shell out to native
-# tools (pactl / brightnessctl / osascript / systemd), so no extra Python
-# packages are needed there — nothing Windows-specific is ever pulled in.
+# Системные действия для macOS / Linux (громкость, яркость, напоминания) вызывают
+# нативные утилиты (pactl / brightnessctl / osascript / systemd), поэтому лишних
+# Python-пакетов там не нужно — ничего виндовского никогда не подтягивается.

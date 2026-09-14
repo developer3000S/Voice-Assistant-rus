@@ -104,24 +104,24 @@ class RateLimitError(Exception):
 def _plan_project(description: str, language: str) -> dict:
     model = _get_model(MODEL_PLANNER)
 
-    prompt = f"""You are a senior software architect. Create a minimal, complete file plan for this project.
+    prompt = f"""Ты — старший архитектор ПО. Составь минимальный, но полный план файлов для этого проекта.
 
-Language: {language}
-Description: {description}
+Язык: {language}
+Описание: {description}
 
-Return ONLY valid JSON — no markdown, no explanation:
+Верни ONLY корректный JSON — без markdown, без пояснений:
 {{
   "project_name": "snake_case_name",
   "entry_point": "main.py",
   "files": [
     {{
       "path": "main.py",
-      "description": "Entry point — what it does and which modules it imports",
+      "description": "Точка входа — что она делает и какие модули импортирует",
       "imports": ["utils.helpers", "core.engine"]
     }},
     {{
       "path": "utils/helpers.py",
-      "description": "Helper utilities — what functions it exposes",
+      "description": "Вспомогательные утилиты — какие функции они предоставляют",
       "imports": []
     }}
   ],
@@ -129,13 +129,13 @@ Return ONLY valid JSON — no markdown, no explanation:
   "dependencies": ["requests"]
 }}
 
-Critical rules:
-1. List files in DEPENDENCY ORDER — files with no imports come first, entry point comes last.
-2. The "imports" field must list every other project module this file imports (dot-notation, e.g. "utils.helpers").
-3. Keep it minimal — only files truly needed.
-4. Entry point must be in the files list.
-5. Use relative paths only (e.g. "utils/helpers.py", not absolute paths).
-6. Standard library modules (os, sys, json, etc.) do NOT go in "dependencies".
+Важные правила:
+1. Перечисли файлы в ПОРЯДКЕ ЗАВИСИМОСТЕЙ — сначала файлы без импортов, точка входа в конце.
+2. В поле "imports" перечисли каждый модуль проекта, который этот файл импортирует (нотация через точку, например "utils.helpers").
+3. Делай минимум — только действительно нужные файлы.
+4. Точка входа обязана быть в списке files.
+5. Используй только относительные пути (например "utils/helpers.py", а не абсолютные).
+6. Модули стандартной библиотеки (os, sys, json и т.д.) в "dependencies" НЕ попадают.
 
 JSON:"""
 
@@ -144,7 +144,7 @@ JSON:"""
         raw = _strip_fences(response.text)
         return json.loads(raw)
     except json.JSONDecodeError as e:
-        raise ValueError(f"Planner returned invalid JSON: {e}\nRaw: {response.text[:300]}")
+        raise ValueError(f"Планировщик вернул некорректный JSON: {e}\nИсходный текст: {response.text[:300]}")
     except Exception as e:
         if _is_rate_limit(e):
             raise RateLimitError(str(e))
@@ -174,49 +174,49 @@ def _write_file(
         dep_path = dep_dotted.replace(".", "/") + ".py"
         if dep_path in already_written:
             code_snippet = already_written[dep_path][:2000]
-            dependency_context += f"\n\n--- {dep_path} (you must import from this) ---\n{code_snippet}"
+            dependency_context += f"\n\n--- {dep_path} (из него нужно импортировать) ---\n{code_snippet}"
 
     lang_rules = ""
     if language.lower() == "python":
         lang_rules = """
-Python-specific rules:
-- Use type hints for all function signatures.
-- Add docstrings for all public functions and classes.
-- Use if __name__ == "__main__": guard in the entry point.
-- For relative imports within the project, use: from utils.helpers import foo  (match the project structure exactly).
-- Do NOT use implicit relative imports (from . import ...) unless it's a proper package with __init__.py.
-- If this is a package subdirectory, create __init__.py files where needed."""
+Правила для Python:
+- Ставь подсказки типов во всех сигнатурах функций.
+- Добавляй docstring ко всем публичным функциям и классам.
+- В точке входа используй защиту if __name__ == "__main__":.
+- Для относительных импортов внутри проекта пиши: from utils.helpers import foo  (в точности по структуре проекта).
+- НЕ используй неявные относительные импорты (from . import ...) — если только это не настоящая упаковка с __init__.py.
+- Если это подкаталог упаковки, создай нужные файлы __init__.py."""
     elif language.lower() in ("javascript", "typescript", "js", "ts"):
         lang_rules = """
-JS/TS-specific rules:
-- Use ES modules (import/export), not CommonJS (require).
-- Add JSDoc comments for all exported functions.
-- Handle promise rejections with try/catch in async functions."""
+Правила для JS/TS:
+- Используй ES-модули (import/export), а не CommonJS (require).
+- Добавляй комментарии JSDoc ко всем экспортируемым функциям.
+- В async-функциях перехватывай отклонения промисов через try/catch."""
 
-    prompt = f"""You are a senior {language} developer writing production-quality code for a real project.
+    prompt = f"""Ты — старший разработчик на {language}, который пишет код промышленного качества для реального проекта.
 
-Project goal: {project_description}
+Цель проекта: {project_description}
 
-Complete project file structure (in dependency order):
+Полная структура файлов проекта (в порядке зависимостей):
 {file_list}
 
-{f"Dependencies this file must import from other project files:{dependency_context}" if dependency_context else ""}
+{f"Зависимости, которые этот файл должен импортировать из других файлов проекта:{dependency_context}" if dependency_context else ""}
 
-Your task: Write the complete, working code for: {file_path}
-Purpose of this file: {file_desc}
-{f"This file imports from: {', '.join(file_imports)}" if file_imports else "This file has no project-internal imports."}
+Твоя задача: написать полный, рабочий код для файла: {file_path}
+Назначение этого файла: {file_desc}
+{f"Этот файл импортирует из: {', '.join(file_imports)}" if file_imports else "Внутренних импортов из файлов проекта у этого файла нет."}
 
 {lang_rules}
 
-General rules:
-- Output ONLY raw code. Absolutely no explanation, no markdown, no triple backticks.
-- Write COMPLETE, RUNNABLE code — no placeholders, no "# TODO", no "pass" stubs.
-- Every import must either be from the standard library, listed dependencies, or the project files shown above.
-- Match import paths EXACTLY to the file paths in the project structure (e.g. if file is "utils/helpers.py", import as "from utils.helpers import ...").
-- Use proper error handling (try/except) where I/O or network calls are made.
-- The code must work correctly when the project entry point is run from the project root directory.
+Общие правила:
+- Выведи ONLY чистый код. Абсолютно без пояснений, без markdown, без тройных обратных кавычек.
+- Код должен быть ПОЛНЫМ и ЗАПУСКАЕМЫМ — без заглушек, без "# TODO", без заглушек "pass".
+- Каждый импорт обязан быть либо из стандартной библиотеки, либо из заявленных зависимостей, либо из показанных выше файлов проекта.
+- Пути импортов должны ДОСЛОВНО совпадать с путями файлов в структуре проекта (например, если файл "utils/helpers.py", импортируй как "from utils.helpers import ...").
+- Используй корректную обработку ошибок (try/except) там, где есть ввод-вывод или сетевые вызовы.
+- Код обязан работать правильно, когда точку входа проекта запускают из корня проекта.
 
-Code for {file_path}:"""
+Код для {file_path}:"""
 
     try:
         response = model.generate_content(prompt)

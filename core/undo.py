@@ -1,36 +1,38 @@
 """
-core/undo.py — one shared undo stack for every action that changes state.
+core/undo.py — один общий стек отмены для любого действия, меняющего состояние.
 
-WHY THIS EXISTS
-    A voice assistant misunderstands. When it does, "sorry" is not a remedy —
-    the file is already in another folder and the brightness is already at 10%.
-    Before this module the only recovery was to fix it by hand.
+ЗАЧЕМ ЭТО НУЖНО
+    Голосовой ассистент понимает неправильно. Когда это происходит, «извини» —
+    не лекарство: файл уже лежит в другой папке, а яркость уже на 10 %. До этого
+    модуля единственным способом спастись было переделать руками.
 
-    The alternative — asking "are you sure?" before everything — is worse. Every
-    confirmation is a round trip to the model and back, and an assistant that
-    checks with you before turning the volume down is one you stop talking to.
+    Альтернатива — спрашивать «ты уверена?» перед каждым действием, — хуже.
+    Каждое подтверждение это круговой путь к модели и обратно, а ассистент,
+    который советуется с тобой прежде чем убавить громкость, — тот, с кем
+    перестают разговаривать.
 
-    So: act immediately, remember how to reverse it, and let the user say
-    "undo". Confirmation is then reserved for the handful of actions that
-    genuinely cannot be reversed (see core/confirm.py).
+    Поэтому: действуем сразу, помним, как вернуть назад, и даём пользователю
+    сказать «отмени». Подтверждение остаётся за горсткой действий, которые
+    действительно нельзя обратить (см. core/confirm.py).
 
-HOW AN ACTION OPTS IN
-    Actions do not have to know anything about this file's internals. They
-    capture the "before" state and hand back a zero-argument callable:
+КАК ДЕЙСТВИЕ ПОДКЛЮЧАЕТСЯ
+    Действиям не нужно знать внутренности этого файла. Они снимают состояние
+    «до» и возвращают callable без аргументов:
 
         from core.undo import push_undo
         old = volume_get()
         volume_set(new)
-        push_undo(f"volume → {new}%", lambda: volume_set(old))
+        push_undo(f"громкость → {new}%", lambda: volume_set(old))
 
-    Only the action itself can know that the reverse of "move A to B" is "move
-    B to A", which is why this cannot be fully centralised. What IS central is
-    the stack, the ordering, the thread safety and the tool the model calls.
+    Только само действие знает, что обратное к «переместить A в B» — это
+    «переместить B в A», поэтому полностью централизовать это нельзя.
+    А вот централизовано здесь: стек, порядок, потокобезопасность и инструмент,
+    который вызывает модель.
 
-COST
-    Pushing is a list append behind a lock: microseconds. Nothing in here runs
-    until the user actually asks to undo something. This module cannot make the
-    assistant slower.
+ЦЕНА
+    push_undo — это append списка под локом: микросекунды. Ничего отсюда не
+    выполняется, пока пользователь сам не попросит отменить. Замедлить
+    ассистента этот модуль не может.
 """
 
 from __future__ import annotations
@@ -40,16 +42,17 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable
 
-# How many reversible operations we keep. Ten is roughly "this conversation":
-# far enough back to catch a mistake you noticed a few commands later, short
-# enough that a closure holding a file's old contents cannot pile up in RAM.
+# Сколько обратимых операций храним. Десять — это примерно «этот разговор»:
+# достаточно далеко, чтобы поймать ошибку, замеченную пару команд спустя, и
+# достаточно коротко, чтобы замыкания со старым содержимым файлов не копились
+# в памяти.
 MAX_DEPTH = 10
 
 
 @dataclass
 class _Entry:
-    label:   str                    # human sentence, spoken back to the user
-    undo:    Callable[[], str]      # returns a short result string
+    label:   str                    # человеческая фраза, озвучивается пользователю
+    undo:    Callable[[], str]      # возвращает короткую строку результата
     at:      float = field(default_factory=time.monotonic)
 
 
@@ -58,18 +61,18 @@ _lock = threading.Lock()
 
 
 def push_undo(label: str, undo_fn: Callable[[], str]) -> None:
-    """Record that `label` just happened and `undo_fn()` reverses it.
+    """Записать, что `label` только что произошло и `undo_fn()` отменяет это.
 
-    Called from action handlers, which run in executor threads — hence the
-    lock. Never raises: a broken undo registration must not take down the
-    action that actually succeeded."""
+    Вызывается из обработчиков действий, которые работают в executor-потоках, —
+    отсюда лок. Никогда не бросает исключение: сломанная регистрация отмены не
+    должна уносить собой действие, которое как раз удалось."""
     if not callable(undo_fn):
         return
     try:
         with _lock:
             _stack.append(_Entry(label=str(label)[:120], undo=undo_fn))
-            # Drop the oldest rather than refusing the newest: the recent past
-            # is what people ask to undo.
+            # Выбрасываем самое старое, а не отказываем в новом: прошлое,
+            # которое просят отменить, — недавнее.
             while len(_stack) > MAX_DEPTH:
                 _stack.pop(0)
     except Exception as e:                                  # pragma: no cover
@@ -82,40 +85,40 @@ def can_undo() -> bool:
 
 
 def peek() -> str:
-    """Label of the operation that `undo_last()` would reverse, or ''."""
+    """Метка операции, которую отменит `undo_last()`, или ''."""
     with _lock:
         return _stack[-1].label if _stack else ""
 
 
 def history() -> list[str]:
-    """Most recent first — used by the UI panel and the `undo` tool's list mode."""
+    """Сначала свежие — используется панелью UI и режимом списка инструмента `undo`."""
     with _lock:
         return [e.label for e in reversed(_stack)]
 
 
 def undo_last() -> str:
-    """Reverse the most recent reversible operation.
+    """Отменить самую свежую обратимую операцию.
 
-    The entry is popped *before* running so a failing undo cannot be retried
-    forever against a world that has already moved on (the file the user is
-    trying to restore may have been deleted by something else since)."""
+    Запись снимается со стека *до* выполнения, чтобы неудачная отмена не
+    повторялась до бесконечности против мира, который уже ушёл вперёд (файл,
+    который пытаются вернуть, с тех пор мог быть удалён чем-то другим)."""
     with _lock:
         entry = _stack.pop() if _stack else None
 
     if entry is None:
-        return ("There is nothing to undo. I only track things I changed myself — "
-                "files I moved or wrote, and settings I adjusted.")
+        return ("Сэр, отменять нечего. Я слежу только за тем, что меняла сама — "
+                "перемещённые или записанные файлы и настроенные параметры.")
 
     try:
         detail = entry.undo() or ""
     except Exception as e:
-        return f"Could not undo '{entry.label}': {e}"
+        return f"Не удалось отменить «{entry.label}»: {e}"
 
-    return f"Undone: {entry.label}." + (f" {detail}" if detail else "")
+    return f"Отменено: {entry.label}." + (f" {detail}" if detail else "")
 
 
 def clear() -> None:
-    """Forget the stack. Called when the app shuts down so closures holding old
-    file contents do not outlive the session."""
+    """Забыть стек. Вызывается при завершении приложения, чтобы замыкания со
+    старым содержимым файлов не пережили сессию."""
     with _lock:
         _stack.clear()

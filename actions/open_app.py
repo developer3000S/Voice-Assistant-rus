@@ -90,7 +90,7 @@ def _launch_windows(app_name: str) -> bool:
             time.sleep(1.5)
             return True
         except Exception as e:
-            print(f"[open_app] subprocess failed: {e}")
+            print(f"[open_app] Не удалось выполнить subprocess: {e}")
 
     if ":" in app_name:
         try:
@@ -111,7 +111,7 @@ def _launch_windows(app_name: str) -> bool:
         time.sleep(2.5)
         return True
     except Exception as e:
-        print(f"[open_app] Start Menu search failed: {e}")
+        print(f"[open_app] Поиск в меню «Пуск» не удался: {e}")
 
     return False
 
@@ -163,7 +163,7 @@ def _launch_macos(app_name: str) -> bool:
         time.sleep(1.5)
         return True
     except Exception as e:
-        print(f"[open_app] Spotlight failed: {e}")
+        print(f"[open_app] Spotlight не удался: {e}")
 
     return False
 
@@ -175,7 +175,7 @@ _LINUX_TERMINAL_FALLBACKS = [
 
 def _launch_linux(app_name: str) -> bool:
 
-    # terminal emulators: try common ones in order
+    # эмуляторы терминала: по очереди пробуем распространённые
     if app_name in ("x-terminal-emulator", "gnome-terminal", "terminal"):
         for term in _LINUX_TERMINAL_FALLBACKS:
             if shutil.which(term):
@@ -246,43 +246,43 @@ def open_app(
     app_name = (parameters or {}).get("app_name", "").strip()
 
     if not app_name:
-        return "No application name provided."
+        return "Сэр, название приложения не указано."
 
     launcher = _OS_LAUNCHERS.get(_SYSTEM)
     if launcher is None:
-        return f"Unsupported operating system: {_SYSTEM}"
+        return f"Сэр, операционная система не поддерживается: {_SYSTEM}"
 
     normalized = _normalize(app_name)
-    print(f"[open_app] Launching: '{app_name}' → '{normalized}' ({_SYSTEM})")
+    print(f"[open_app] Запуск: '{app_name}' → '{normalized}' ({_SYSTEM})")
 
     if player:
         player.write_log(f"[open_app] {app_name}")
 
     try:
         if launcher(normalized):
-            return f"Opened {app_name}."
+            return f"Готово, сэр, {app_name} открыто."
         if normalized.lower() != app_name.lower():
             if launcher(app_name):
-                return f"Opened {app_name}."
+                return f"Готово, сэр, {app_name} открыто."
         return (
-            f"Could not confirm that {app_name} launched. "
-            f"It may still be loading, or it might not be installed."
+            f"Сэр, не могу подтвердить, что {app_name} запустилось. "
+            f"Возможно, оно ещё загружается или не установлено."
         )
     except Exception as e:
-        print(f"[open_app] Error: {e}")
-        return f"Failed to open {app_name}: {e}"
+        print(f"[open_app] Ошибка: {e}")
+        return f"Сэр, не удалось открыть {app_name}: {e}"
 
 
-# ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
+# ── Описание инструмента (авто-обнаружение через core/action_loader.py) ──────
 TOOL = {
     "name": "open_app",
-    "description": "Opens any application on the computer. Use this whenever the user asks to open, launch, or start any app, website, or program. Always call this tool — never just say you opened it.",
+    "description": "Открывает любое приложение на компьютере. Используй это всякий раз, когда пользователь просит открыть, запустить или начать любое приложение, сайт или программу. Всегда вызывай этот инструмент — никогда просто не говори, что ты его открыла.",
     "parameters": {
         "type": "OBJECT",
         "properties": {
             "app_name": {
                 "type": "STRING",
-                "description": "Exact name of the application (e.g. 'WhatsApp', 'Chrome', 'Spotify')"
+                "description": "Точное название приложения (например, 'WhatsApp', 'Chrome', 'Spotify')"
             }
         },
         "required": [

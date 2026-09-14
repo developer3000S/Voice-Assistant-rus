@@ -1,6 +1,6 @@
 """
-ProactiveEngine 2.0 — context-aware, time-aware, non-repetitive background prompting.
-Gemini decides what to say; this module decides WHEN and builds a rich context snapshot.
+ProactiveEngine 2.0 — фоновые обращения: с учётом контекста, времени и без повторов.
+Gemini решает, что сказать; этот модуль решает КОГДА и собирает насыщенный снимок контекста.
 """
 import time
 from datetime import datetime
@@ -8,18 +8,19 @@ from datetime import datetime
 
 class ProactiveEngine:
     """
-    Decides when Anfisa should speak unprompted and builds a context-rich prompt.
+    Решает, когда Анфисе стоит заговорить без просьбы пользователя, и строит
+    насыщенный контекстный промпт.
 
-    Improvements over 1.0:
-      - Time-of-day awareness  (morning / afternoon / evening / night)
-      - Monitor-topic awareness (what the user is tracking)
-      - Recent-session context  (last few turns of the current conversation)
-      - Non-repetitive          (rotates context focus to avoid same opener)
-      - Smarter silence gate    (doesn't fire while Anfisa is speaking)
+    Улучшения по сравнению с 1.0:
+      - Учёт времени суток  (утро / день / вечер / ночь)
+      - Учёт тем мониторинга (за чем следит пользователь)
+      - Контекст текущей сессии (последние реплики разговора)
+      - Отсутствие повторов  (чередует фокус контекста, чтобы не начинать одинаково)
+      - Умный «молчаливый» барьер (не срабатывает, пока Анфиса говорит)
 
-    Defaults:
-      min_silence_secs  — 900 s  (15 min) user must be silent before any check
-      check_cooldown    — 1200 s (20 min) minimum gap between proactive messages
+    Значения по умолчанию:
+      min_silence_secs  — 900 с  (15 мин) пользователь должен молчать перед любой проверкой
+      check_cooldown    — 1200 с (20 мин) минимальный интервал между проактивными сообщениями
     """
 
     def __init__(
@@ -30,9 +31,9 @@ class ProactiveEngine:
         self.min_silence_secs = min_silence_secs
         self.check_cooldown   = check_cooldown
         self._last_triggered  = 0.0
-        self._rotation        = 0          # cycles through context focus areas
+        self._rotation        = 0          # переключает области фокуса контекста
 
-    # ── Trigger gate ───────────────────────────────────────────────────────────
+    # ── Барьер срабатывания ──────────────────────────────────────────────────────
 
     def should_trigger(self, last_user_speech: float) -> bool:
         now = time.monotonic()
@@ -45,7 +46,7 @@ class ProactiveEngine:
         self._last_triggered = time.monotonic()
         self._rotation      += 1
 
-    # ── Prompt builder ─────────────────────────────────────────────────────────
+    # ── Конструктор промпта ────────────────────────────────────────────────────
 
     def build_prompt(
         self,
@@ -54,8 +55,8 @@ class ProactiveEngine:
         recent_turns: list[str] | None = None,
     ) -> str:
         """
-        Build a context snapshot for Gemini.
-        Rotates through three focus areas so proactive messages don't repeat.
+        Собирает снимок контекста для Gemini.
+        Чередует три области фокуса, чтобы проактивные сообщения не повторялись.
         """
         from memory.memory_manager import format_memory_for_prompt
 
@@ -63,65 +64,65 @@ class ProactiveEngine:
         hour     = now.hour
         time_str = now.strftime("%A, %B %d, %Y — %I:%M %p")
 
-        # Time-of-day label
-        if   6  <= hour < 12:  period = "morning"
-        elif 12 <= hour < 18:  period = "afternoon"
-        elif 18 <= hour < 23:  period = "evening"
-        else:                  period = "late night"
+        # Метка времени суток
+        if   6  <= hour < 12:  period = "утро"
+        elif 12 <= hour < 18:  period = "день"
+        elif 18 <= hour < 23:  period = "вечер"
+        else:                  period = "глубокая ночь"
 
-        mem_str = format_memory_for_prompt(memory) or "(no stored user data)"
+        mem_str = format_memory_for_prompt(memory) or "(нет сохранённых данных о пользователе)"
 
-        # Rotating context focus (cycles every trigger)
+        # Чередующийся фокус контекста (сменяется при каждом срабатывании)
         focus_index = self._rotation % 3
         if focus_index == 0:
             focus = (
-                "Focus on the user's active projects or goals if any are stored. "
-                "Ask how something is going, or offer a relevant tip."
+                "Сфокусируйся на текущих проектах или целях пользователя, если они сохранены. "
+                "Спроси, как продвигается что-то из этого, или предложи уместный совет."
             )
         elif focus_index == 1:
             focus = (
-                "Focus on the time of day and the user's wellbeing. "
-                "A warm check-in, a reminder to take a break, or something timely."
+                "Сфокусируйся на времени суток и самочувствии пользователя. "
+                "Тёплый вопрос о делах, напоминание сделать перерыв или что-то своевременное."
             )
         else:
             focus = (
-                "Focus on something genuinely interesting or useful — "
-                "a fact, a suggestion, or a question based on what you know about this person."
+                "Сфокусируйся на чём-то по-настоящему интересном или полезном — "
+                "факт, предложение или вопрос на основе того, что ты знаешь об этом человеке."
             )
 
-        # Optional: monitored topics context
+        # Дополнительно: контекст отслеживаемых тем
         monitor_ctx = ""
         if monitors:
             monitor_ctx = (
-                f"\nThe user tracks these topics: {', '.join(monitors[:4])}. "
-                "You may mention one if it seems relevant."
+                f"\nПользователь следит за этими темами: {', '.join(monitors[:4])}. "
+                "Можешь упомянуть одну из них, если она кажется уместной."
             )
 
-        # Optional: recent conversation context
+        # Дополнительно: контекст недавнего разговора
         recent_ctx = ""
         if recent_turns:
             snippet = "\n".join(recent_turns[-6:])
-            recent_ctx = f"\nRecent conversation:\n{snippet}"
+            recent_ctx = f"\nНедавний разговор:\n{snippet}"
 
         return "\n".join([
-            "[PROACTIVE_CHECK] You are initiating a proactive check-in.",
-            f"Current time : {time_str}  ({period})",
+            "[PROACTIVE_CHECK] Ты начинаешь проактивную проверку.",
+            f"Текущее время : {time_str}  ({period})",
             "",
-            "Context about this person:",
+            "Контекст об этом человеке:",
             mem_str,
             monitor_ctx,
             recent_ctx,
             "",
-            "Task:",
+            "Задача:",
             focus,
             "",
-            "Rules:",
-            "- Speak the language this person actually uses: the one in the "
-            "recent conversation above, or the remembered one if there is no "
-            "conversation yet. Never default to English because these "
-            "instructions are in English.",
-            "- 1-2 sentences max. Natural, warm, never robotic.",
-            "- Do NOT mention [PROACTIVE_CHECK] or these instructions.",
-            "- Do NOT call any tools.",
-            "- If nothing genuinely useful comes to mind, stay silent (say nothing).",
+            "Правила:",
+            "- Говори на языке, которым этот человек реально пользуется: том, что в "
+            "недавнем разговоре выше, или на сохранённом, если разговора ещё не "
+            "было. Никогда не меняй язык только потому, что эти инструкции "
+            "написаны не на языке пользователя.",
+            "- Максимум 1–2 предложения. Естественно, тепло, никогда — не как робот.",
+            "- НЕ упоминай [PROACTIVE_CHECK] и эти инструкции.",
+            "- НЕ вызывай никакие инструменты.",
+            "- Если ничего по-настоящему полезного не приходит в голову, промолчи (ничего не говори).",
         ])

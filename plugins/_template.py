@@ -1,42 +1,45 @@
 """
-Drop-in Anfisa plugin template.
+Шаблон подключаемого плагина для Анфисы.
 
-Copy this file, rename it (no leading underscore), fill in PLUGIN and run().
-No other file needs to change — Anfisa discovers this automatically at startup.
+Скопируйте этот файл, переименуйте его (без подчёркивания в начале), заполните
+PLUGIN и run(). Больше менять ничего не нужно — Анфиса обнаружит плагин сама при
+запуске.
 """
 
 PLUGIN = {
-    "name": "my_plugin",                     # snake_case, unique, ^[a-zA-Z_][a-zA-Z0-9_]{0,63}$
+    "name": "my_plugin",                     # snake_case, уникальный, ^[a-zA-Z_][a-zA-Z0-9_]{0,63}$
     "description": (
-        "One or two sentences Gemini uses to decide when to call this tool. "
-        "Be explicit about trigger phrases and, if it could be confused with "
-        "another tool, say which tool NOT to use instead (see game_updater's "
-        "description in main.py for the pattern)."
+        "Одно-два предложения, по которым Gemini решает, когда вызывать этот "
+        "инструмент. Прямо укажите фразы-триггеры, а если инструмент можно "
+        "спутать с другим — напишите, какой инструмент НЕЛЬЗЯ использовать "
+        "вместо него (образец — description у game_updater в main.py)."
     ),
     "parameters": {
         "type": "OBJECT",
         "properties": {
-            "example_arg": {"type": "STRING", "description": "What this argument means"},
+            "example_arg": {"type": "STRING", "description": "Что означает этот аргумент"},
         },
-        "required": [],   # omit or leave empty for a zero-argument tool
+        "required": [],   # для инструмента без аргументов опустите или оставьте пустым
     },
 }
 
 def run(parameters: dict, player=None, session_memory=None) -> str:
     """
-    parameters: dict of the args Gemini extracted, matching PLUGIN['parameters'].
-    player: the AnfisaUI instance — use player.write_log(f"Anfisa: ...") to log,
-            same as actions/*.py. May be None.
-    session_memory: reserved, usually None today (core tools mostly pass None too).
-    Return a short natural-language string — this is spoken back to the user.
-    Never raise: catch your own errors and return a spoken error string instead
-    (the loader also catches exceptions as a second safety net, but don't rely on it).
+    parameters: словарь аргументов, которые извлёк Gemini, — см. PLUGIN['parameters'].
+    player: экземпляр AnfisaUI — для записи в журнал используйте
+            player.write_log(f"Anfisa: ...") так же, как в actions/*.py. Может быть None.
+    session_memory: зарезервировано; сегодня обычно None (встроенные инструменты
+            тоже в основном передают None).
+    Возвращайте короткую строку живым языком — её озвучат пользователю.
+    Никогда не бросайте исключений: перехватывайте свои ошибки и возвращайте
+    строку с текстом ошибки для озвучки (загрузчик тоже подхватывает исключения
+    как вторую страховку, но полагаться на это не стоит).
     """
     example_arg = parameters.get("example_arg", "")
     try:
-        result_text = f"Did the thing with {example_arg}."
+        result_text = f"Сделано: {example_arg}."
     except Exception as e:
-        return f"Sir, my_plugin failed: {e}"
+        return f"Сэр, my_plugin не сработал: {e}"
     if player:
         try:
             player.write_log(f"Anfisa: {result_text}")

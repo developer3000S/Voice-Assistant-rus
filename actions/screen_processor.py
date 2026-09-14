@@ -1,10 +1,10 @@
 """
-Screen & webcam capture for Anfisa vision.
+Захват экрана и веб-камеры для зрения Анфисы.
 
-Provides the two capture entry points main.py uses — `_capture_screen()` and
-`_capture_camera()` — plus their helpers (compression, camera auto-detection,
-config access). main.py grabs a frame here on demand, then injects it into the
-main Gemini Live session; there is no separate vision session here.
+Даёт две точки входа захвата, которые использует main.py — `_capture_screen()` и
+`_capture_camera()`, — плюс их вспомогательные функции (сжатие, автоопределение
+камеры, доступ к настройкам). main.py берёт отсюда кадр по запросу и подмешивает
+его в основную сессию Gemini Live; отдельной сессии для зрения здесь нет.
 """
 from __future__ import annotations
 
@@ -58,7 +58,7 @@ def _save_config_key(key: str, value) -> None:
         cfg[key] = value
         _CONFIG_PATH.write_text(json.dumps(cfg, indent=4), encoding="utf-8")
     except Exception as e:
-        print(f"[Vision] ⚠️  Could not save config key '{key}': {e}")
+        print(f"[Vision] ⚠️  Не удалось сохранить ключ конфига '{key}': {e}")
 
 
 def _get_os() -> str:
@@ -81,17 +81,17 @@ def _compress(img_bytes: bytes, source_format: str = "PNG") -> tuple[bytes, str]
         img.save(buf, format="JPEG", quality=_JPEG_Q, optimize=False)
         return buf.getvalue(), "image/jpeg"
     except Exception as e:
-        print(f"[Vision] ⚠️  Image compress failed: {e}")
+        print(f"[Vision] ⚠️  Не удалось сжать изображение: {e}")
         return img_bytes, f"image/{source_format.lower()}"
 
 
 def _capture_screen() -> tuple[bytes, str]:
 
     if not _MSS:
-        raise RuntimeError("mss is not installed. Run: pip install mss")
+        raise RuntimeError("Модуль mss не установлен. Выполните: pip install mss")
 
     with mss.mss() as sct:
-        monitors = sct.monitors          # [0] = all combined, [1..n] = real screens
+        monitors = sct.monitors          # [0] = все вместе, [1..n] = реальные экраны
         target   = monitors[1] if len(monitors) > 1 else monitors[0]
         shot     = sct.grab(target)
         png      = mss.tools.to_png(shot.rgb, shot.size)
@@ -100,7 +100,7 @@ def _capture_screen() -> tuple[bytes, str]:
 
 
 def _cv2_backend() -> int:
-    """Return the best OpenCV camera backend for the current OS."""
+    """Возвращает лучший бэкенд камеры OpenCV для текущей ОС."""
     if not _CV2:
         return 0
     os_name = _get_os()
@@ -131,15 +131,15 @@ def _probe_camera(index: int, backend: int, warmup: int = 5) -> bool:
 def _detect_camera_index() -> int:
 
     backend = _cv2_backend()
-    print("[Vision] 🔍 Auto-detecting camera...")
+    print("[Vision] 🔍 Автоопределение камеры...")
     for idx in range(6):
         if _probe_camera(idx, backend):
-            print(f"[Vision] ✅ Camera found at index {idx}")
+            print(f"[Vision] ✅ Камера найдена под индексом {idx}")
             _save_config_key("camera_index", idx)
             return idx
-        print(f"[Vision] ⚠️  Camera index {idx}: no usable frame")
+        print(f"[Vision] ⚠️  Камера, индекс {idx}: пригодный кадр не получен")
 
-    print("[Vision] ⚠️  No camera found — defaulting to index 0")
+    print("[Vision] ⚠️  Камера не найдена — использую индекс 0 по умолчанию")
     _save_config_key("camera_index", 0)
     return 0
 
@@ -153,14 +153,14 @@ def _get_camera_index() -> int:
 
 def _capture_camera() -> tuple[bytes, str]:
     if not _CV2:
-        raise RuntimeError("OpenCV (cv2) is not installed. Run: pip install opencv-python")
+        raise RuntimeError("Модуль OpenCV (cv2) не установлен. Выполните: pip install opencv-python")
 
     index   = _get_camera_index()
     backend = _cv2_backend()
     cap     = cv2.VideoCapture(index, backend)
 
     if not cap.isOpened():
-        raise RuntimeError(f"Camera index {index} could not be opened.")
+        raise RuntimeError(f"Не удалось открыть камеру под индексом {index}.")
 
     for _ in range(10):
         cap.read()
@@ -169,7 +169,7 @@ def _capture_camera() -> tuple[bytes, str]:
     cap.release()
 
     if not ret or frame is None:
-        raise RuntimeError("Camera returned no frame.")
+        raise RuntimeError("Камера не вернула кадр.")
 
     if _PIL:
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

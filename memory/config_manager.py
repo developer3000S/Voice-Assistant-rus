@@ -40,7 +40,7 @@ def load_api_keys() -> dict:
     try:
         return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
     except Exception as e:
-        print(f"❌ Failed to load api_keys.json: {e}")
+        print(f"❌ Не удалось загрузить api_keys.json: {e}")
         return {}
 
 def get_gemini_key() -> str | None:
@@ -52,17 +52,17 @@ def is_configured() -> bool:
 
 
 def get_assistant_name() -> str:
-    """Return the configured assistant name, or 'Anfisa' if not set."""
+    """Вернуть настроенное имя ассистента; если не задано — 'Anfisa'."""
     return load_api_keys().get("assistant_name", "Anfisa") or "Anfisa"
 
 
 def get_user_name() -> str:
-    """Return the configured user name for addressing."""
+    """Вернуть настроенное имя пользователя для обращения."""
     return load_api_keys().get("user_name", "")
 
 
 def save_assistant_config(assistant_name: str, user_name: str) -> None:
-    """Persist assistant name and user name to config."""
+    """Сохранить имя ассистента и имя пользователя в конфиге."""
     ensure_config_dir()
     data: dict = {}
     if CONFIG_FILE.exists():
@@ -75,23 +75,23 @@ def save_assistant_config(assistant_name: str, user_name: str) -> None:
     CONFIG_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
 
 
-# ── Assistant voice ──────────────────────────────────────────────────────────
-# Gemini Live prebuilt voices. Names are proper nouns — identical in every
-# language, so this list is safe to show verbatim in any locale.
+# ── Голос ассистента ─────────────────────────────────────────────────────────
+# Готовые голоса Gemini Live. Названия — имена собственные: они одинаковы на
+# всех языках, поэтому этот список можно показывать дословно в любой локали.
 AVAILABLE_VOICES = ["Charon", "Puck", "Kore", "Fenrir", "Aoede"]
 DEFAULT_VOICE    = "Charon"
 
 
 def get_voice() -> str:
-    """Return the configured Live voice, falling back to the default if unset
-    or if the stored value is not a voice we recognise."""
+    """Вернуть настроенный голос Live; если он не задан или сохранённое значение
+    нам неизвестно — вернуть голос по умолчанию."""
     v = load_api_keys().get("voice_name", DEFAULT_VOICE) or DEFAULT_VOICE
     return v if v in AVAILABLE_VOICES else DEFAULT_VOICE
 
 
 def save_voice(voice_name: str) -> None:
-    """Persist the chosen Live voice. Unknown names collapse to the default so a
-    bad value can never reach the API and break the session."""
+    """Сохранить выбранный голос Live. Неизвестные имена сводятся к значению по
+    умолчанию, чтобы плохое значение никогда не дошло до API и не сломало сессию."""
     ensure_config_dir()
     data: dict = {}
     if CONFIG_FILE.exists():
@@ -105,7 +105,7 @@ def save_voice(voice_name: str) -> None:
 
 
 def get_wake_word_enabled() -> bool:
-    """Whether local wake-word gating is on (assistant sleeps until 'Привет Анфиса')."""
+    """Включён ли локальный отбор по слову пробуждения (ассистент спит, пока не скажут «Привет Анфиса»)."""
     return load_api_keys().get("wake_word_enabled", False)
 
 
@@ -137,19 +137,20 @@ def save_brief_enabled(enabled: bool) -> None:
     CONFIG_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
 
 
-# ── Audio devices ────────────────────────────────────────────────────────────
-# Stored as device NAMES, not sounddevice indices. Indices shift every time a
-# USB device is plugged in or removed, so a saved index silently starts pointing
-# at a different microphone. The empty string means "system default", which is
-# both the factory setting and what an unresolvable saved device falls back to —
-# so unplugging a headset degrades to the built-in speakers instead of crashing.
+# ── Аудиоустройства ──────────────────────────────────────────────────────────
+# Хранятся НАЗВАНИЯ устройств, а не индексы sounddevice. Индексы сдвигаются
+# каждый раз, когда USB-устройство подключают или отключают, поэтому сохранённый
+# индекс незаметно начинает указывать на другой микрофон. Пустая строка означает
+# «системные по умолчанию» — это и заводская настройка, и то, на что откатится
+# сохранённое устройство, которое не удаётся разрешить; значит, отключённые
+# наушники дают встроенные динамики, а не падение.
 
 def _patch_config(**fields) -> None:
-    """Read-modify-write one or more keys in api_keys.json.
+    """Чтение-изменение-запись одного или нескольких ключей в api_keys.json.
 
-    Every setter in this file open-coded this. Collapsing it here means a new
-    setting is one line, and there is one place where a corrupt config file is
-    handled instead of nine."""
+    Каждый сеттер в этом файле делал это вручную. Сведя их здесь, мы получаем
+    одну строку на новую настройку и одно место, где испорченный файл конфига
+    обрабатывается, а не девять."""
     ensure_config_dir()
     data: dict = {}
     if CONFIG_FILE.exists():
@@ -162,7 +163,7 @@ def _patch_config(**fields) -> None:
 
 
 def get_input_device() -> str:
-    """Microphone device name, or '' for the system default."""
+    """Название устройства записи (микрофона) или '' — системное по умолчанию."""
     return (load_api_keys().get("input_device", "") or "").strip()
 
 
@@ -171,7 +172,7 @@ def save_input_device(name: str) -> None:
 
 
 def get_output_device() -> str:
-    """Speaker device name, or '' for the system default."""
+    """Название устройства воспроизведения (динамиков) или '' — системное по умолчанию."""
     return (load_api_keys().get("output_device", "") or "").strip()
 
 
@@ -180,31 +181,33 @@ def save_output_device(name: str) -> None:
 
 
 def get_plugin_enabled(plugin_name: str) -> bool:
-    """Plugins are enabled by default the moment they're discovered (opt-out model)."""
+    """Плагин включён по умолчанию в тот момент, когда он обнаружен (модель opt-out)."""
     return load_api_keys().get("plugins_enabled", {}).get(plugin_name, True)
 
 
-# ── Per-plugin settings ("tokens" / connection details) ───────────────────────
-# Generic store so a plugin can declare its own config fields (PLUGIN_SETTINGS)
-# and the settings UI renders + persists them WITHOUT any core edit — keeping the
-# drop-in model intact. Values live under plugin_config[<namespace>][<key>].
-# A namespace defaults to the plugin name, but a suite of plugins (e.g. the
-# printer control/watchdog/autoeject trio) can share ONE namespace.
+# ── Настройки каждого плагина («токены» / параметры подключения) ──────────────
+# Универсальное хранилище, чтобы плагин мог объявить собственные поля конфига
+# (PLUGIN_SETTINGS), и UI настроек отрисовал их и сохранял БЕЗ правок в ядре —
+# модель «просто положи файл» сохраняется. Значения лежат в
+# plugin_config[<namespace>][<key>].
+# По умолчанию пространство имён равно имени плагина, но связка плагинов
+# (например, тройка принтера: control/watchdog/autoeject) может делить ОДНО
+# пространство имён.
 def get_plugin_config(namespace: str) -> dict:
-    """All stored values for a namespace (empty dict if none set yet)."""
+    """Все сохранённые значения пространства имён (пустой dict, если ничего нет)."""
     cfg = load_api_keys().get("plugin_config")
     val = cfg.get(namespace) if isinstance(cfg, dict) else None
     return dict(val) if isinstance(val, dict) else {}
 
 
 def get_plugin_setting(namespace: str, key: str, default=None):
-    """A single value from a namespace, or `default` if unset."""
+    """Одно значение из пространства имён либо `default`, если не задано."""
     return get_plugin_config(namespace).get(key, default)
 
 
 def save_plugin_config(namespace: str, values: dict) -> None:
-    """Merge `values` into a namespace's stored config (read-modify-write, like
-    every other helper here). Only the provided keys are touched."""
+    """Влить `values` в сохранённый конфиг пространства имён (чтение-изменение-
+    запись, как и остальные помощники здесь). Затрагиваются только переданные ключи."""
     ensure_config_dir()
     data: dict = {}
     if CONFIG_FILE.exists():

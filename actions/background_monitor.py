@@ -1,7 +1,8 @@
 """
-BackgroundMonitor — user-configured topic watching.
-Checks DDG news once per day per topic; alerts Anfisa when a new headline appears.
-No crypto, no finance, no uninvited tracking.
+BackgroundMonitor — наблюдение за темами, которое настраивает сам пользователь.
+Проверяет новости DDG по каждой теме не чаще раза в сутки и уведомляет «Анфису»,
+когда появляется новый заголовок.
+Никаких криптовалют, финансов и слежки без спроса.
 """
 import hashlib
 import json
@@ -10,13 +11,13 @@ from datetime import datetime
 from pathlib import Path
 
 
-# ── Blocked categories (never monitor regardless of what user says) ────────────
+# ── Запрещённые категории (не отслеживаются, что бы пользователь ни сказал) ────
 
 _BLOCKED = {
-    # Brand / asset names — spelled the same in every language
+    # Названия брендов / активов — пишутся одинаково на всех языках
     "bitcoin", "ethereum", "dogecoin", "solana", "binance",
     "nft", "blockchain", "defi", "altcoin", "memecoin", "coin", "token",
-    # spellings of the "crypto" root across different languages
+    # Написания корня «crypto» на разных языках
     "crypto", "kripto", "cripto", "krypto", "крипто", "仮想通貨", "暗号資産",
     "cryptocurrency",
 }
@@ -26,7 +27,7 @@ def _is_blocked(topic: str) -> bool:
     return any(word in t for word in _BLOCKED)
 
 
-# ── Slug / hash helpers ────────────────────────────────────────────────────────
+# ── Вспомогательные функции: slug и хэш ────────────────────────────────────────
 
 def _slug(topic: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", topic.lower().strip())[:40].strip("_")
@@ -35,7 +36,7 @@ def _title_hash(title: str) -> str:
     return hashlib.md5(title.encode("utf-8", errors="ignore")).hexdigest()[:12]
 
 
-# ── Memory I/O ─────────────────────────────────────────────────────────────────
+# ── Чтение и запись в память ───────────────────────────────────────────────────
 
 def _load() -> dict:
     from memory.memory_manager import load_memory
@@ -54,18 +55,18 @@ def _save(monitors: dict) -> None:
         )
 
 
-# ── Public API ─────────────────────────────────────────────────────────────────
+# ── Публичный API ──────────────────────────────────────────────────────────────
 
 def add_monitor(topic: str) -> str:
     topic = topic.strip()
     if not topic:
-        return "Please specify a topic to monitor."
+        return "Сэр, укажите тему для наблюдения."
     if _is_blocked(topic):
-        return "I don't monitor crypto or financial topics."
+        return "Сэр, криптовалюты и финансовые темы я не отслеживаю."
     monitors = _load()
     slug = _slug(topic)
     if slug in monitors:
-        return f"Already monitoring: {monitors[slug]['topic']}"
+        return f"Эта тема уже наблюдается: {monitors[slug]['topic']}"
     monitors[slug] = {
         "topic":      topic,
         "added":      datetime.now().strftime("%Y-%m-%d"),
@@ -73,26 +74,26 @@ def add_monitor(topic: str) -> str:
         "last_hash":  "",
     }
     _save(monitors)
-    print(f"[Monitor] ➕ Added: {topic}")
-    return f"Now monitoring: {topic}"
+    print(f"[Monitor] ➕ Добавлена: {topic}")
+    return f"Начинаю наблюдать за темой: {topic}"
 
 
 def remove_monitor(topic: str) -> str:
     topic = topic.strip().lower()
     monitors = _load()
-    # exact slug match first
+    # сначала пробуем точное совпадение по slug
     slug = _slug(topic)
     if slug in monitors:
         label = monitors.pop(slug)["topic"]
         _save(monitors)
-        return f"Stopped monitoring: {label}"
-    # partial match fallback
+        return f"Наблюдение прекращено: {label}"
+    # если точно не совпало — ищем частичное совпадение
     for key, val in list(monitors.items()):
         if topic in val.get("topic", "").lower():
             label = monitors.pop(key)["topic"]
             _save(monitors)
-            return f"Stopped monitoring: {label}"
-    return f"Not found in monitored topics: {topic}"
+            return f"Наблюдение прекращено: {label}"
+    return f"Среди наблюдаемых тем не найдено: {topic}"
 
 
 def list_monitors() -> list[str]:
@@ -101,8 +102,9 @@ def list_monitors() -> list[str]:
 
 def check_all() -> list[str]:
     """
-    Run all pending topic checks (once per day per topic).
-    Returns a list of [MONITOR_ALERT] strings — empty if nothing new.
+    Проверяет все темы, у которых наступил срок проверки (по каждой — не чаще
+    раза в сутки).
+    Возвращает список строк с меткой [MONITOR_ALERT] — пусто, если нового ничего нет.
     """
     from actions.web_search import _ddg_news
 
@@ -116,7 +118,7 @@ def check_all() -> list[str]:
 
     for slug, data in monitors.items():
         if data.get("last_check") == today:
-            continue                     # already checked today
+            continue                     # сегодня эта тема уже проверялась
 
         topic = data.get("topic", slug)
         try:
@@ -136,22 +138,22 @@ def check_all() -> list[str]:
             changed = True
 
             if h == data.get("last_hash"):
-                continue                 # same headline as last check — no alert
+                continue                 # заголовок тот же, что и в прошлый раз — не уведомляем
 
             monitors[slug]["last_hash"] = h
 
             snippet = top.get("snippet", "")[:150]
             source  = top.get("source", "")
-            parts   = [f"[MONITOR_ALERT] {topic}", f"Headline: {title}"]
+            parts   = [f"[MONITOR_ALERT] {topic}", f"Заголовок: {title}"]
             if snippet:
                 parts.append(snippet)
             if source:
-                parts.append(f"Source: {source}")
+                parts.append(f"Источник: {source}")
             alerts.append("\n".join(parts))
-            print(f"[Monitor] 🔔 New headline for '{topic}': {title[:60]}")
+            print(f"[Monitor] 🔔 Новый заголовок по теме '{topic}': {title[:60]}")
 
         except Exception as e:
-            print(f"[Monitor] ⚠️ Check failed for '{topic}': {e}")
+            print(f"[Monitor] ⚠️ Не удалось проверить тему '{topic}': {e}")
 
     if changed:
         _save(monitors)

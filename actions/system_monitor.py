@@ -1,6 +1,6 @@
 """
-System Monitor — background metric checks with voice alert support.
-Zero subprocess calls on all platforms — uses ctypes/pynvml/psutil/wmi only.
+System Monitor — фоновая проверка метрик с поддержкой голосового оповещения.
+Ни одного вызова подпроцесса на всех платформах — используются только ctypes/pynvml/psutil/wmi.
 """
 import ctypes
 import platform
@@ -20,13 +20,13 @@ DEFAULT_THRESHOLDS = {
 _COOLDOWN   = 300
 _CPU_STREAK = 3
 
-# ── NVML DLL cache (Windows: nvml.dll, Linux: libnvidia-ml.so.1) ─────────────
+# ── Кэш NVML DLL (Windows: nvml.dll, Linux: libnvidia-ml.so.1) ───────────────
 _nvml_lib: object = None
-_nvml_ok:  object = None   # None=untested  True=works  False=unavailable
+_nvml_ok:  object = None   # None=не проверено  True=работает  False=недоступно
 
 
 def _nvml_gpu() -> float:
-    """GPU utilisation via NVML — zero subprocess on all platforms."""
+    """Загрузка GPU через NVML — без подпроцессов на всех платформах."""
     global _nvml_lib, _nvml_ok
     if _nvml_ok is False:
         return -1.0
@@ -70,7 +70,7 @@ def _nvml_gpu() -> float:
 
 
 def _get_gpu_usage() -> float:
-    # pynvml — subprocess-free, works everywhere if installed
+    # pynvml — без подпроцессов, работает везде, если установлен
     try:
         import pynvml  # type: ignore
         pynvml.nvmlInit()
@@ -83,7 +83,7 @@ def _get_gpu_usage() -> float:
 
 
 def _get_cpu_temp() -> float:
-    # psutil — works on Linux; occasionally Windows with proper drivers
+    # psutil — работает на Linux; на Windows иногда при наличии нужных драйверов
     try:
         temps = psutil.sensors_temperatures()
         for name in ["coretemp", "k10temp", "cpu_thermal", "acpitz",
@@ -111,7 +111,7 @@ def _get_cpu_temp() -> float:
 
 
 def get_system_status() -> dict:
-    """Snapshot of current system metrics for the system_status tool."""
+    """Снимок текущих метрик системы для инструмента system_status."""
     cpu  = psutil.cpu_percent(interval=0.2)
     ram  = psutil.virtual_memory()
     temp = _get_cpu_temp()
@@ -136,8 +136,9 @@ def get_system_status() -> dict:
 
 class SystemMonitor:
     """
-    Stateful monitor — cooldown state persists across session reconnections.
-    Call check() periodically; returns a [SYSTEM_ALERT] string or None.
+    Монитор с сохраняемым состоянием — состояние пауз оповещения переживает
+    переподключения сессии.
+    Периодически вызывайте check(); возвращается строка [SYSTEM_ALERT] или None.
     """
 
     def __init__(self, thresholds: dict | None = None):
@@ -166,9 +167,9 @@ class SystemMonitor:
             self._cpu_streak += 1
             if self._cpu_streak >= _CPU_STREAK and self._can_alert("cpu"):
                 alerts.append(
-                    f"[SYSTEM_ALERT] CPU usage has been critically high ({cpu:.0f}%) "
-                    "for several seconds. Warn the user in their language and suggest "
-                    "closing heavy applications."
+                    f"[SYSTEM_ALERT] Загрузка CPU критически высокая ({cpu:.0f}%) "
+                    "уже несколько секунд. Предупреди пользователя на его языке и "
+                    "предложи закрыть ресурсоёмкие приложения."
                 )
                 self._record("cpu")
                 self._cpu_streak = 0
@@ -177,23 +178,24 @@ class SystemMonitor:
 
         if ram >= self.thresholds["ram"] and self._can_alert("ram"):
             alerts.append(
-                f"[SYSTEM_ALERT] RAM is at {ram:.0f}% — nearly exhausted. "
-                "Warn the user in their language and suggest freeing memory."
+                f"[SYSTEM_ALERT] Оперативная память заполнена на {ram:.0f}% — "
+                "она почти исчерпана. Предупреди пользователя на его языке и "
+                "предложи освободить память."
             )
             self._record("ram")
 
         if temp > 0 and temp >= self.thresholds["temp"] and self._can_alert("temp"):
             alerts.append(
-                f"[SYSTEM_ALERT] CPU temperature is {temp:.0f}°C — above the safe limit. "
-                "Warn the user in their language and advise reducing system load "
-                "or checking cooling."
+                f"[SYSTEM_ALERT] Температура CPU {temp:.0f}°C — выше безопасного предела. "
+                "Предупреди пользователя на его языке и предложи снизить "
+                "нагрузку на систему или проверить охлаждение."
             )
             self._record("temp")
 
         if gpu >= 0 and gpu >= self.thresholds["gpu"] and self._can_alert("gpu"):
             alerts.append(
-                f"[SYSTEM_ALERT] GPU load is at {gpu:.0f}%. "
-                "Briefly inform the user in their language."
+                f"[SYSTEM_ALERT] Загрузка GPU достигла {gpu:.0f}%. "
+                "Кратко сообщи об этом пользователю на его языке."
             )
             self._record("gpu")
 

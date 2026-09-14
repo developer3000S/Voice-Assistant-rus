@@ -29,8 +29,8 @@ _MONTH_MAP: dict[str, int] = {
     "september": 9, "october": 10, "november": 11, "december": 12,
 }
 
-# English fast-path only — Gemini (below) normalizes date expressions in ANY
-# language to YYYY-MM-DD, so no other language needs to be hardcoded here.
+# Быстрый путь только для английского — Gemini (ниже) приводит даты к формату
+# YYYY-MM-DD на ЛЮБОМ языке, поэтому другие языки здесь не прописываются.
 _RELATIVE_MAP_KEYS = {
     "today",
     "tomorrow",
@@ -65,16 +65,16 @@ def _parse_date(raw: str) -> str:
         response = _client.models.generate_content(
             model="gemini-flash-lite-latest",
             contents=(
-                f"Today is {today.strftime('%Y-%m-%d')}. "
-                f"Convert this date expression to YYYY-MM-DD: '{raw}'. "
-                f"Return ONLY the date string, nothing else."
+                f"Сегодня {today.strftime('%Y-%m-%d')}. "
+                f"Преобразуй это дата-выражение в формат YYYY-MM-DD: '{raw}'. "
+                f"Верни ONLY строку с датой и ничего больше."
             )
         )
         result = response.text.strip()
         if re.match(r"\d{4}-\d{2}-\d{2}", result):
             return result
     except Exception as e:
-        print(f"[FlightFinder] ⚠️ Gemini date parse failed: {e}")
+        print(f"[FlightFinder] ⚠️ Не удалось разобрать дату через Gemini: {e}")
 
     for month_name, month_num in _MONTH_MAP.items():
         if month_name in lower:
@@ -84,8 +84,8 @@ def _parse_date(raw: str) -> str:
                 year = today.year if month_num >= today.month else today.year + 1
                 return f"{year}-{month_num:02d}-{day:02d}"
 
-    # Last resort: today
-    print(f"[FlightFinder] ⚠️ Could not parse date '{raw}' — using today.")
+    # Крайний случай: сегодня
+    print(f"[FlightFinder] ⚠️ Не удалось разобрать дату '{raw}' — беру сегодняшнее число.")
     return today.strftime("%Y-%m-%d")
 
 _CABIN_CODE: dict[str, str] = {
@@ -107,7 +107,7 @@ def _build_google_flights_url(
     cabin_code = _CABIN_CODE.get(cabin.lower(), "1")
     base       = "https://www.google.com/travel/flights"
 
-    # Google Flights accepts these query params for pre-filling
+    # Google Flights принимает эти query-параметры для предзаполнения
     if return_date:
         trip = f"Flights+from+{origin}+to+{destination}+on+{date}+returning+{return_date}"
     else:
@@ -139,7 +139,7 @@ def _search_flights_browser(
         origin, destination, date, return_date, passengers, cabin
     )
 
-    print(f"[FlightFinder] 🌐 Opening: {url}")
+    print(f"[FlightFinder] 🌐 Открываю: {url}")
     browser_control({"action": "go_to", "url": url})
     time.sleep(5)
 
@@ -157,12 +157,12 @@ def _parse_flights_with_gemini(
 
     _client = _genai.Client(api_key=_get_api_key())
     prompt  = (
-        f"Extract flight options from {origin} to {destination} on {date} "
-        f"from this Google Flights page text:\n\n{raw_text[:12000]}\n\n"
-        f"Return a JSON array of up to 5 flights:\n"
+        f"Извлеки варианты перелётов из {origin} в {destination} на {date} "
+        f"из текста этой страницы Google Flights:\n\n{raw_text[:12000]}\n\n"
+        f"Верни JSON-массив не более чем из 5 рейсов:\n"
         f'[{{"airline":"...","departure":"HH:MM","arrival":"HH:MM",'
         f'"duration":"Xh Ym","stops":0,"price":"...","currency":"USD"}}]\n'
-        f"If no flights found, return: []"
+        f"Если рейсов не найдено, верни: []"
     )
 
     try:
@@ -171,8 +171,8 @@ def _parse_flights_with_gemini(
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=(
-                    "You are a flight data extraction expert. "
-                    "Extract flight information from raw webpage text. "
+                    "Ты — специалист по извлечению данных о рейсах. "
+                    "Извлекай информацию о рейсах из сырого текста веб-страницы. "
                     "Return ONLY valid JSON — no markdown, no explanation."
                 )
             ),
@@ -181,7 +181,7 @@ def _parse_flights_with_gemini(
         flights  = json.loads(text)
         return flights if isinstance(flights, list) else []
     except Exception as e:
-        print(f"[FlightFinder] ⚠️ Gemini parse failed: {e}")
+        print(f"[FlightFinder] ⚠️ Не удалось разобрать ответ через Gemini: {e}")
         return []
 
 def _format_spoken(
@@ -192,14 +192,14 @@ def _format_spoken(
 ) -> str:
     if not flights:
         return (
-            f"I couldn't find any flights from {origin} to {destination} "
-            f"on {date}, sir. The page may not have loaded correctly."
+            f"Сэр, не удалось найти рейсы из {origin} в {destination} "
+            f"на {date}. Возможно, страница не загрузилась до конца."
         )
 
-    lines = [f"Here are the top flights from {origin} to {destination} on {date}, sir."]
+    lines = [f"Сэр, лучшие рейсы из {origin} в {destination} на {date}."]
 
     for i, f in enumerate(flights[:5], 1):
-        airline   = f.get("airline",   "Unknown airline")
+        airline   = f.get("airline",   "неизвестная авиакомпания")
         departure = f.get("departure", "--:--")
         arrival   = f.get("arrival",   "--:--")
         duration  = f.get("duration",  "")
@@ -207,16 +207,16 @@ def _format_spoken(
         price     = f.get("price",     "")
         currency  = f.get("currency",  "")
 
-        stop_str  = "non-stop" if stops == 0 else f"{stops} stop{'s' if stops > 1 else ''}"
-        price_str = f"{price} {currency}".strip() if price else "price unavailable"
-        dur_str   = f", {duration}" if duration else ""
+        stop_str  = "без пересадок" if stops == 0 else f"{stops} пересадка" if stops == 1 else f"{stops} пересадки" if stops < 5 else f"{stops} пересадок"
+        price_str = f"{price} {currency}".strip() if price else "цена недоступна"
+        dur_str   = f", в пути {duration}" if duration else ""
 
         lines.append(
-            f"Option {i}: {airline}, departing {departure}, "
-            f"arriving {arrival}{dur_str}, {stop_str}, {price_str}."
+            f"Вариант {i}: {airline}, вылет в {departure}, "
+            f"прибытие в {arrival}{dur_str}, {stop_str}, {price_str}."
         )
 
-    # Cheapest — strip non-digits for comparison
+    # Самый дешёвый — для сравнения оставляем только цифры
     priced = [f for f in flights if f.get("price")]
     if priced:
         cheapest = min(
@@ -224,8 +224,8 @@ def _format_spoken(
             key=lambda x: int(re.sub(r"[^\d]", "", str(x["price"])) or "999999"),
         )
         lines.append(
-            f"The cheapest option is {cheapest.get('airline')} "
-            f"at {cheapest.get('price')} {cheapest.get('currency', '')}."
+            f"Самый дешёвый вариант — {cheapest.get('airline')} "
+            f"за {cheapest.get('price')} {cheapest.get('currency', '')}."
         )
 
     return " ".join(lines)
@@ -240,34 +240,34 @@ def _format_text_report(
     page_url:    str,
 ) -> str:
     lines = [
-        "Anfisa — Flight Search Results",
+        "Анфиса — результаты поиска авиабилетов",
         "─" * 50,
-        f"Route     : {origin} → {destination}",
-        f"Date      : {date}",
+        f"Маршрут       : {origin} → {destination}",
+        f"Дата          : {date}",
     ]
     if return_date:
-        lines.append(f"Return    : {return_date}")
+        lines.append(f"Обратно       : {return_date}")
     lines += [
-        f"Searched  : {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-        f"Source    : {page_url}",
+        f"Поиск выполнен: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        f"Источник      : {page_url}",
         "─" * 50,
         "",
     ]
 
     if not flights:
-        lines.append("No flights found.")
+        lines.append("Рейсов не найдено.")
     else:
         for i, f in enumerate(flights, 1):
             stops    = f.get("stops", 0)
-            stop_str = "Non-stop" if stops == 0 else f"{stops} stop(s)"
+            stop_str = "Без пересадок" if stops == 0 else f"{stops} пересадка" if stops == 1 else f"{stops} пересадки" if stops < 5 else f"{stops} пересадок"
             lines += [
-                f"Flight {i}:",
-                f"  Airline   : {f.get('airline',   'N/A')}",
-                f"  Departure : {f.get('departure', 'N/A')}",
-                f"  Arrival   : {f.get('arrival',   'N/A')}",
-                f"  Duration  : {f.get('duration',  'N/A')}",
-                f"  Stops     : {stop_str}",
-                f"  Price     : {f.get('price', 'N/A')} {f.get('currency', '')}",
+                f"Рейс {i}:",
+                f"  Авиакомпания: {f.get('airline',   'N/A')}",
+                f"  Отправление : {f.get('departure', 'N/A')}",
+                f"  Прибытие    : {f.get('arrival',   'N/A')}",
+                f"  В пути      : {f.get('duration',  'N/A')}",
+                f"  Пересадки   : {stop_str}",
+                f"  Цена        : {f.get('price', 'N/A')} {f.get('currency', '')}",
                 "",
             ]
 
@@ -281,7 +281,7 @@ def _save_to_desktop(content: str, origin: str, destination: str) -> str:
     filepath = desktop / filename
 
     filepath.write_text(content, encoding="utf-8")
-    print(f"[FlightFinder] 💾 Saved: {filepath}")
+    print(f"[FlightFinder] 💾 Сохранено: {filepath}")
 
     try:
         if is_windows():
@@ -291,7 +291,7 @@ def _save_to_desktop(content: str, origin: str, destination: str) -> str:
         else:
             subprocess.Popen(["xdg-open", str(filepath)])
     except Exception as e:
-        print(f"[FlightFinder] ⚠️ Could not open text editor: {e}")
+        print(f"[FlightFinder] ⚠️ Не удалось открыть текстовый редактор: {e}")
 
     return str(filepath)
 
@@ -308,11 +308,11 @@ def flight_finder(parameters: dict, player=None, speak=None) -> str:
     save        = bool(params.get("save", False))
 
     if not origin or not destination:
-        return "Please provide both origin and destination, sir."
+        return "Сэр, укажите пункт отправления и пункт назначения."
     if not date_raw:
-        return "Please provide a departure date, sir."
+        return "Сэр, укажите дату вылета."
 
-    # Normalise cabin value
+    # Нормализуем класс перелёта
     if cabin not in _CABIN_CODE:
         cabin = "economy"
 
@@ -320,10 +320,10 @@ def flight_finder(parameters: dict, player=None, speak=None) -> str:
     return_date = _parse_date(return_raw) if return_raw else None
 
     if player:
-        player.write_log(f"[FlightFinder] {origin} → {destination} on {date}")
+        player.write_log(f"[FlightFinder] {origin} → {destination} на {date}")
 
     if speak:
-        speak(f"Searching flights from {origin} to {destination} on {date}, sir.")
+        speak(f"Сэр, ищу рейсы из {origin} в {destination} на {date}.")
 
     print(
         f"[FlightFinder] ▶️ {origin} → {destination} | {date}"
@@ -337,10 +337,10 @@ def flight_finder(parameters: dict, player=None, speak=None) -> str:
         )
 
         if not raw_text:
-            return "Could not retrieve flight data, sir. The page may not have loaded."
+            return "Сэр, не удалось получить данные о рейсах. Возможно, страница не загрузилась."
 
         if speak:
-            speak("Analysing the results now, sir.")
+            speak("Сэр, сейчас анализирую результаты.")
 
         flights = _parse_flights_with_gemini(raw_text, origin, destination, date)
         spoken  = _format_spoken(flights, origin, destination, date)
@@ -353,41 +353,41 @@ def flight_finder(parameters: dict, player=None, speak=None) -> str:
         if save and flights:
             report     = _format_text_report(flights, origin, destination, date, return_date, page_url)
             saved_path = _save_to_desktop(report, origin, destination)
-            result    += f" Results saved to Desktop: {saved_path}"
+            result    += f" Результаты сохранены на Рабочем столе: {saved_path}"
 
         return result
 
     except Exception as e:
         print(f"[FlightFinder] ❌ {e}")
-        return f"Flight search failed, sir: {e}"
+        return f"Сэр, поиск авиабилетов не удался: {e}"
 
 
-# ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
+# ── Описание инструмента (авто-обнаружение через core/action_loader.py) ──────
 TOOL = {
     "name": "flight_finder",
-    "description": "Searches Google Flights and speaks the best options.",
+    "description": "Ищет на Google Flights и озвучивает лучшие варианты.",
     "parameters": {
         "type": "OBJECT",
         "properties": {
             "origin": {
                 "type": "STRING",
-                "description": "Departure city or airport code"
+                "description": "Город или код аэропорта отправления"
             },
             "destination": {
                 "type": "STRING",
-                "description": "Arrival city or airport code"
+                "description": "Город или код аэропорта назначения"
             },
             "date": {
                 "type": "STRING",
-                "description": "Departure date (any format)"
+                "description": "Дата вылета (в любом формате)"
             },
             "return_date": {
                 "type": "STRING",
-                "description": "Return date for round trips"
+                "description": "Дата обратного вылета для круговых поездок"
             },
             "passengers": {
                 "type": "INTEGER",
-                "description": "Number of passengers (default: 1)"
+                "description": "Число пассажиров (по умолчанию: 1)"
             },
             "cabin": {
                 "type": "STRING",
@@ -395,7 +395,7 @@ TOOL = {
             },
             "save": {
                 "type": "BOOLEAN",
-                "description": "Save results to Notepad"
+                "description": "Сохранить результаты в Notepad"
             }
         },
         "required": [

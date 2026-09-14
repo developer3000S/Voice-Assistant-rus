@@ -35,7 +35,7 @@ def _gemini_search(query: str) -> str:
 
     text = text.strip()
     if not text:
-        raise ValueError("Gemini returned an empty response.")
+        raise ValueError("Gemini вернул пустой ответ.")
     return text
 
 
@@ -57,7 +57,7 @@ def _ddg_search(query: str, max_results: int = 6) -> list[dict]:
 
 
 def _ddg_news(query: str, max_results: int = 8) -> list[dict]:
-    """DDG news search — returns actual articles, not website homepages."""
+    """Поиск новостей в DDG — возвращает сами статьи, а не главные страницы сайтов."""
     try:
         from ddgs import DDGS
     except ImportError:
@@ -74,29 +74,30 @@ def _ddg_news(query: str, max_results: int = 8) -> list[dict]:
                     "source":  r.get("source", ""),
                 })
     except Exception as e:
-        print(f"[WebSearch] ⚠️ DDG news() failed ({e}) — falling back to text search")
+        print(f"[WebSearch] ⚠️ DDG news() не сработал ({e}) — перехожу на поиск по тексту")
         results = _ddg_search(query, max_results=max_results)
     return results
 
 
 def _format_ddg(query: str, results: list[dict]) -> str:
     if not results:
+        # Префикс "No results" сравнивается в main.py — не переводим.
         return f"No results found for: {query}"
 
-    lines = [f"Search results for: {query}\n"]
+    lines = [f"Результаты поиска по запросу: {query}\n"]
     for i, r in enumerate(results, 1):
         if r.get("title"):   lines.append(f"{i}. {r['title']}")
         if r.get("snippet"): lines.append(f"   {r['snippet']}")
-        if r.get("url"):     lines.append(f"   Source: {r['url']}")
+        if r.get("url"):     lines.append(f"   Источник: {r['url']}")
         lines.append("")
     return "\n".join(lines).strip()
 
 
 def _format_news(query: str, results: list[dict]) -> str:
     if not results:
-        return f"No news found for: {query}"
+        return f"Новостей по запросу «{query}» не найдено."
 
-    lines = [f"Latest news: {query}\n"]
+    lines = [f"Последние новости: {query}\n"]
     for i, r in enumerate(results, 1):
         title = r.get("title", "")
         if not title:
@@ -111,13 +112,13 @@ def _format_news(query: str, results: list[dict]) -> str:
     return "\n".join(lines).strip()
 
 
-# ── Briefing helper ────────────────────────────────────────────────────────────
+# ── Вспомогательный код для брифинга ─────────────────────────────────────────
 
 def _gemini_headlines(n: int = 5) -> tuple[list[str], str]:
     """
-    Fetches current headlines via Gemini grounded search.
-    Optimised for speed: minimal prompt + strict token cap.
-    Returns (headline_list, raw_text_for_display).
+    Получает актуальные заголовки через Gemini с поиском в Google.
+    Оптимизировано по скорости: минимальный запрос + строгое ограничение по объёму.
+    Возвращает (список_заголовков, исходный_текст_для_показа).
     """
     import re
     from google import genai
@@ -125,7 +126,7 @@ def _gemini_headlines(n: int = 5) -> tuple[list[str], str]:
     client = genai.Client(api_key=_get_api_key())
     response = client.models.generate_content(
         model="gemini-flash-latest",
-        contents=f"Current world news: {n} headlines. Numbered list, titles only.",
+        contents=f"Мировые новости на сегодня: {n} заголовков. Нумерованный список, только заголовки.",
         config={"tools": [{"google_search": {}}]},
     )
 
@@ -139,7 +140,7 @@ def _gemini_headlines(n: int = 5) -> tuple[list[str], str]:
         line = line.strip()
         if not line:
             continue
-        # Only accept lines that begin with a number — skips preamble/closing sentences
+        # Принимаем только строки, начинающиеся с цифры — отсекает вступление и заключительные фразы
         if not re.match(r'^[\d]+[.\)\-]', line):
             continue
         clean = re.sub(r'^[\d]+[.\)\-]\s*', '', line)
@@ -150,29 +151,29 @@ def _gemini_headlines(n: int = 5) -> tuple[list[str], str]:
     return headlines[:n], raw.strip()
 
 
-# ── Modes ──────────────────────────────────────────────────────────────────────
+# ── Режимы ───────────────────────────────────────────────────────────────────
 
 def _search(query: str) -> str:
-    """Default search — Gemini grounded, DDG fallback."""
+    """Поиск по умолчанию — Gemini с поиском в Google, запасной вариант — DDG."""
     try:
         return _gemini_search(query)
     except Exception as e:
-        print(f"[WebSearch] ⚠️ Gemini failed ({e}) — trying DDG...")
+        print(f"[WebSearch] ⚠️ Gemini не справился ({e}) — пробую DDG...")
         results = _ddg_search(query)
         return _format_ddg(query, results)
 
 
 def _news(query: str) -> str:
     """
-    Runs Gemini grounded search AND DDG news in parallel.
-    Returns whichever delivers a valid result first; cancels the other.
+    Запускает Gemini с поиском в Google И DDG-новости параллельно.
+    Возвращает тот, кто первым даст корректный результат; второй отменяется.
     """
     import threading
 
-    gemini_query = f"latest news today: {query}" if query else "top world news today"
-    ddg_query    = query if query else "world news today"
+    gemini_query = f"последние новости сегодня: {query}" if query else "главные мировые новости сегодня"
+    ddg_query    = query if query else "мировые новости сегодня"
 
-    result_box  = [None]   # first valid result lands here
+    result_box  = [None]   # сюда попадает первый корректный результат
     lock        = threading.Lock()
     done_evt    = threading.Event()
     failures    = [0]
@@ -186,14 +187,14 @@ def _news(query: str) -> str:
         else:
             with lock:
                 failures[0] += 1
-                if failures[0] >= 2:   # both failed — unblock caller
+                if failures[0] >= 2:   # оба не справились — разблокируем вызвавшего
                     done_evt.set()
 
     def _try_gemini():
         try:
             _store(_gemini_search(gemini_query))
         except Exception as e:
-            print(f"[WebSearch] ⚠️ Gemini news failed ({e})")
+            print(f"[WebSearch] ⚠️ Gemini (новости) не справился ({e})")
             _store("")
 
     def _try_ddg():
@@ -201,53 +202,53 @@ def _news(query: str) -> str:
             results = _ddg_news(ddg_query, max_results=8)
             _store(_format_news(ddg_query, results))
         except Exception as e:
-            print(f"[WebSearch] ⚠️ DDG news failed ({e})")
+            print(f"[WebSearch] ⚠️ DDG (новости) не справился ({e})")
             _store("")
 
     threading.Thread(target=_try_gemini, daemon=True).start()
     threading.Thread(target=_try_ddg,    daemon=True).start()
 
     done_evt.wait(timeout=10.0)
-    return result_box[0] or f"No news found for: {query}"
+    return result_box[0] or f"Новостей по запросу «{query}» не найдено."
 
 
 def _research(query: str) -> str:
     """
-    Deep dive — asks Gemini for a comprehensive answer with context.
-    Falls back to a wider DDG fetch.
+    Углублённый разбор — просит у Gemini подробный ответ с контекстом.
+    Запасной вариант — более широкий запрос к DDG.
     """
     research_query = (
-        f"Comprehensive, detailed explanation of: {query}. "
-        "Include background context, key facts, current state, and important nuances."
+        f"Подробное, развёрнутое объяснение темы: {query}. "
+        "Дополни фоновым контекстом, ключевыми фактами, текущим положением дел и важными нюансами."
     )
     try:
         return _gemini_search(research_query)
     except Exception as e:
-        print(f"[WebSearch] ⚠️ Research Gemini failed ({e}) — DDG fallback...")
+        print(f"[WebSearch] ⚠️ Gemini (research) не справился ({e}) — запасной вариант через DDG...")
         results = _ddg_search(query, max_results=10)
         return _format_ddg(query, results)
 
 
 def _price(query: str) -> str:
-    """Product price lookup — searches for current market prices."""
-    price_query = f"current price of {query} — how much does it cost today"
+    """Поиск цены товара — ищет актуальные рыночные цены."""
+    price_query = f"текущая цена {query} — сколько это стоит сегодня"
     try:
         return _gemini_search(price_query)
     except Exception as e:
-        print(f"[WebSearch] ⚠️ Price Gemini failed ({e}) — DDG fallback...")
+        print(f"[WebSearch] ⚠️ Gemini (цены) не справился ({e}) — запасной вариант через DDG...")
         results = _ddg_search(f"{query} price buy", max_results=6)
         return _format_ddg(query, results)
 
 
 def _compare(items: list[str], aspect: str) -> str:
     query = (
-        f"Compare {', '.join(items)} in terms of {aspect}. "
-        "Give specific facts and data."
+        f"Сравни {', '.join(items)} по критерию «{aspect}». "
+        "Приведи конкретные факты и данные."
     )
     try:
         return _gemini_search(query)
     except Exception as e:
-        print(f"[WebSearch] ⚠️ Gemini compare failed: {e} — falling back to DDG")
+        print(f"[WebSearch] ⚠️ Gemini (сравнение) не справился: {e} — перехожу на DDG")
 
     all_results: dict[str, list] = {}
     for item in items:
@@ -256,7 +257,7 @@ def _compare(items: list[str], aspect: str) -> str:
         except Exception:
             all_results[item] = []
 
-    lines = [f"Comparison — {aspect.upper()}", "─" * 40]
+    lines = [f"Сравнение — {aspect.upper()}", "─" * 40]
     for item in items:
         lines.append(f"\n▸ {item}")
         for r in all_results.get(item, [])[:2]:
@@ -267,7 +268,7 @@ def _compare(items: list[str], aspect: str) -> str:
     return "\n".join(lines)
 
 
-# ── Public entry point ─────────────────────────────────────────────────────────
+# ── Точка входа ────────────────────────────────────────────────────────────────
 
 def web_search(
     parameters:     dict,
@@ -282,7 +283,7 @@ def web_search(
     aspect = params.get("aspect", "general").strip() or "general"
 
     if not query and not items:
-        return "Please provide a search query."
+        return "Сэр, укажите поисковый запрос."
 
     if items and mode not in ("compare",):
         mode = "compare"
@@ -304,20 +305,21 @@ def web_search(
         return _search(query)
 
     except Exception as e:
-        print(f"[WebSearch] ❌ All backends failed: {e}")
+        print(f"[WebSearch] ❌ Все источники не сработали: {e}")
+        # Префикс "Search failed" сравнивается в main.py — не переводим.
         return f"Search failed: {e}"
 
 
-# ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
+# ── Описание инструмента (авто-обнаружение через core/action_loader.py) ──────
 TOOL = {
     "name": "web_search",
-    "description": "Searches the web. Use for ANY question about current facts, events, prices, or topics — always prefer this over guessing. Modes: 'search' (default), 'news' (latest headlines on a topic), 'research' (deep comprehensive answer), 'price' (product cost lookup), 'compare' (side-by-side comparison of items).",
+    "description": "Ищет в интернете. Применяй для ЛЮБОГО вопроса о текущих фактах, событиях, ценах или темах — всегда предпочитай это догадкам. Режимы: 'search' (по умолчанию), 'news' (последние заголовки по теме), 'research' (глубокий развёрнутый ответ), 'price' (цена товара), 'compare' (сравнение объектов бок о бок).",
     "parameters": {
         "type": "OBJECT",
         "properties": {
             "query": {
                 "type": "STRING",
-                "description": "Search query or topic"
+                "description": "Поисковый запрос или тема"
             },
             "mode": {
                 "type": "STRING",
@@ -328,11 +330,11 @@ TOOL = {
                 "items": {
                     "type": "STRING"
                 },
-                "description": "Items to compare (compare mode)"
+                "description": "Список сравниваемых объектов (режим compare)"
             },
             "aspect": {
                 "type": "STRING",
-                "description": "Comparison aspect: price | specs | reviews | features"
+                "description": "Критерий сравнения: price | specs | reviews | features"
             }
         },
         "required": [

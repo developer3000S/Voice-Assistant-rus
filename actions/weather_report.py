@@ -30,7 +30,7 @@ def weather_action(
         _log(msg, player)
         return msg
 
-    msg = f"Showing the weather for {city}, {when}, sir."
+    msg = f"Сэр, показываю погоду для {city}, {when}."
     _log(msg, player)
 
     if session_memory:
@@ -51,16 +51,16 @@ def _log(message: str, player=None) -> None:
             pass
 
 
-# ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
+# ── Описание инструмента (авто-обнаружение через core/action_loader.py) ──────
 TOOL = {
     "name": "weather_report",
-    "description": "Gives the weather report to user",
+    "description": "Сообщает пользователю прогноз погоды",
     "parameters": {
         "type": "OBJECT",
         "properties": {
             "city": {
                 "type": "STRING",
-                "description": "City name"
+                "description": "Название города"
             }
         },
         "required": [

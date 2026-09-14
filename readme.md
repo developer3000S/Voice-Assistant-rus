@@ -203,6 +203,9 @@ if action in _DANGEROUS_ACTIONS:            # {"restart", "shutdown"}
 ```bash
 git clone https://github.com/Developer3000S/Voice-assistant.git
 cd Voice-assistant
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
 python setup.py        # устанавливает зависимости для ВАШЕЙ ОС + движок браузерной автоматизации
 python main.py
 ```

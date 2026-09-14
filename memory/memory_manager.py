@@ -17,31 +17,33 @@ MEMORY_PATH      = BASE_DIR / "memory" / "long_term.json"
 _lock            = Lock()
 MAX_VALUE_LENGTH = 380
 
-# ── Why there are two very different numbers here ────────────────────────────
+# ── Почему здесь две очень разные цифры ──────────────────────────────────────
 #
-# There used to be one: MEMORY_MAX_CHARS = 2200, applied to the whole store. It
-# was a *storage* limit, and it existed only because the entire memory was
-# pasted into the system prompt on every connect — so growing the memory grew
-# every single request. When it filled, _trim_to_limit() deleted the oldest
-# entries and printed one line to a console nobody reads. A memory described as
-# "deeply remembers projects, preferences and personal context" was in practice
-# two pages long, and quietly forgot your sister's name after a few weeks.
+# Раньше было одно: MEMORY_MAX_CHARS = 2200, применённый ко всему хранилищу.
+# Это был лимит на хранение, и существовал он только потому, что вся память
+# целиком вставлялась в системный промпт при каждом подключении, — то есть рост
+# памяти удорожал каждый запрос. Когда она заполнялась, _trim_to_limit()
+# удаляла самые старые записи и печатала одну строку в консоль, которую никто
+# не читает. Память, которая «глубоко помнит проекты, предпочтения и личный
+# контекст», на деле оказалась длиной в две страницы и тихо забыла имя сестры
+# через несколько недель.
 #
-# Storage and prompt budget are now separate concerns:
+# Хранение и бюджет промпта теперь — разные заботы:
 #
-#   MEMORY_MAX_CHARS  — a runaway guard, not a feature limit. Nothing normal
-#                       reaches it; a bug writing in a loop does.
-#   PROMPT_CORE_CHARS — what actually rides in the system prompt every session.
-#                       Smaller than the old whole-memory dump, so sessions
-#                       start *faster* than before, not slower.
+#   MEMORY_MAX_CHARS  — страховка от выхода из-под контроля, а не ограничение
+#                       функционала. Штатный сценарий до него не доходит;
+#                       доходит баг, который пишет в цикле.
+#   PROMPT_CORE_CHARS — то, что реально едет в системный промпт каждую сессию.
+#                       Меньше, чем старый дамп всей памяти, поэтому сессии
+#                       стартуют быстрее, чем раньше, а не медленнее.
 #
-# Everything above the core stays on disk and is fetched on demand by the
-# recall_memory tool — see search_memory() and format_memory_for_prompt().
+# Всё, что не вошло в ядро, остаётся на диске и достаётся по требованию
+# инструментом recall_memory — см. search_memory() и format_memory_for_prompt().
 MEMORY_MAX_CHARS  = 200_000
 PROMPT_CORE_CHARS = 900
 PROMPT_INDEX_CHARS = 420
-# Most entries any one category may contribute to the core block, so a person
-# with forty stored preferences still gets their sister into the prompt.
+# Сколько записей одна категория максимум может дать в блок ядра — чтобы у
+# человека с сорока сохранёнными предпочтениями в промпт всё равно попала сестра.
 PROMPT_MAX_PER_CATEGORY = 6
 
 def _empty_memory() -> dict:
@@ -68,7 +70,7 @@ def load_memory() -> dict:
                 return data
             return _empty_memory()
         except Exception as e:
-            print(f"[Memory] ⚠️ Load error: {e}")
+            print(f"[Memory] ⚠️ Ошибка загрузки: {e}")
             return _empty_memory()
 
 def _all_entries(memory: dict) -> list[tuple]:
@@ -82,13 +84,15 @@ def _all_entries(memory: dict) -> list[tuple]:
     return entries
 
 
-# Set by main.py so a trim can reach the activity log. Deleting something a
-# person told you and mentioning it only on stdout is how a memory loses trust.
+# Устанавливается из main.py, чтобы обрезка памяти попала в журнал активности.
+# Удалить то, что человек тебе сам рассказал, и упомянуть об этом только в
+# stdout — так память теряет доверие.
 _trim_notifier = None
 
 
 def set_trim_notifier(fn) -> None:
-    """Register a callable(str) that surfaces trims to the user."""
+    """Зарегистрировать вызываемый объект callable(str), который показывает
+    обрезки памяти пользователю."""
     global _trim_notifier
     _trim_notifier = fn
 
@@ -104,11 +108,11 @@ def _trim_to_limit(memory: dict) -> dict:
             break
         del memory[cat][key]
         dropped.append(f"{cat}/{key}")
-        print(f"[Memory] 🗑️  Trimmed {cat}/{key}")
+        print(f"[Memory] 🗑️  Удалено при обрезке: {cat}/{key}")
     if dropped and _trim_notifier:
         try:
             _trim_notifier(
-                f"SYS: Memory full — forgot {len(dropped)} oldest entries "
+                f"SYS: Память переполнена — забыто {len(dropped)} самых старых записей "
                 f"({', '.join(dropped[:3])}{'…' if len(dropped) > 3 else ''})"
             )
         except Exception:
@@ -162,12 +166,12 @@ def update_memory(memory_update: dict) -> dict:
     memory = load_memory()
     if _recursive_update(memory, memory_update):
         save_memory(memory)
-        print(f"[Memory] 💾 Saved: {list(memory_update.keys())}")
+        print(f"[Memory] 💾 Сохранено: {list(memory_update.keys())}")
     return memory
 
 def _entry_value(entry) -> str:
-    """Accept both the {'value': ..., 'updated': ...} shape and a bare string,
-    because early versions of the store wrote plain strings."""
+    """Принимает и форму {'value': ..., 'updated': ...}, и просто строку,
+    потому что ранние версии хранилища записывали обычные строки."""
     if isinstance(entry, dict):
         return str(entry.get("value", "") or "").strip()
     return str(entry or "").strip()
@@ -177,14 +181,14 @@ def _pretty(key: str) -> str:
     return key.replace("_", " ").strip()
 
 
-# Identity is always in the prompt; these categories compete for the remaining
-# budget by recency.
+# Идентификация находится в промпте всегда; эти категории конкурируют за
+# остаток бюджета по признаку свежести.
 _CATEGORY_LABELS = {
-    "preferences":   "Preferences",
-    "projects":      "Active projects / goals",
-    "relationships": "People in their life",
-    "wishes":        "Wishes / plans",
-    "notes":         "Notes",
+    "preferences":   "Предпочтения",
+    "projects":      "Активные проекты / цели",
+    "relationships": "Люди в его жизни",
+    "wishes":        "Желания / планы",
+    "notes":         "Заметки",
 }
 
 _IDENTITY_FIELDS = ["name", "age", "birthday", "city", "job",
@@ -192,45 +196,47 @@ _IDENTITY_FIELDS = ["name", "age", "birthday", "city", "job",
 
 
 def format_memory_for_prompt(memory: dict | None) -> str:
-    """Build the memory block that goes into the system prompt.
+    """Собрать блок памяти, который попадает в системный промпт.
 
-    This used to dump everything. It now sends three things:
+    Раньше сюда выгружалось всё. Теперь отправляются три вещи:
 
-      1. IDENTITY  - always, in full. It is small, and it is wrong for the
-         assistant to have to look up your name.
-      2. RECENT    - the most recently updated entries from every other
-         category, up to PROMPT_CORE_CHARS. Recency is the cheapest useful
-         relevance signal available without embeddings.
-      3. AN INDEX  - the *keys* of everything else, values omitted.
+      1. IDENTITY (идентификация) — всегда и целиком. Она маленькая, и это
+         неправильно, когда ассистенту нужно искать, как тебя зовут.
+      2. НЕДАВНЕЕ — самые свежие по дате обновления записи из каждой
+         остальной категории, до PROMPT_CORE_CHARS. Свежесть — самый дешёвый
+         из полезных сигналов релевантности, доступный без эмбеддингов.
+      3. УКАЗАТЕЛЬ — *ключи* всего остального, без значений.
 
-    Point 3 is what makes recall work at all. A model cannot decide to look
-    something up if it does not know the thing exists: with only points 1 and 2,
-    "who is Ayse?" would get "I don't know" while ayse_sister sat on disk
-    unread. The index costs a few hundred characters and turns recall from a
-    gamble into a lookup.
+    Пункт 3 — то, благодаря чему вспоминание вообще работает. Модель не может
+    решить что-то поискать, если она не знает, что это существует: с одними
+    только пунктами 1 и 2 на вопрос «who is Ayse?» следовало «I don't know»,
+    тогда как ayse_sister лежал на диске непрочитанным. Указатель стоит
+    несколько сотен символов и превращает вспоминание из гадания в точный
+    поиск.
 
-    Net effect on latency: this block is SMALLER than the old full dump, so
-    every session connects with fewer tokens. Occasionally the model spends one
-    extra round trip on recall_memory - covered by the acknowledgment it
-    already speaks before any slow step."""
+    Итог по задержке: этот блок МЕНЬШЕ старого полного дампа, поэтому каждая
+    сессия подключается с меньшим числом токенов. Иногда модель тратит один
+    лишний круг на recall_memory — это покрыто тем подтверждением, которое она
+    произносит заранее, перед любым долгим шагом."""
     if not memory:
         return ""
 
     core_lines: list[str] = []
 
-    # 1. Identity - always, in full
+    # 1. Идентификация — всегда и целиком
     identity = memory.get("identity", {}) or {}
     for field in _IDENTITY_FIELDS:
         val = _entry_value(identity.get(field))
         if not val:
             continue
         if field == "language":
-            # Labelled as an observation, not a setting. A bare "Language:
-            # English" line written months ago reads like a standing order and
-            # was one of the reasons a Turkish question came back in English.
+            # Подаётся как наблюдение, а не как настройка. Голая строка
+            # «Language: English», записанная месяцы назад, читается как
+            # постоянное указание — и была одной из причин, по которым вопрос
+            # на турецком возвращался на английском.
             core_lines.append(
-                f"Has spoken to you in: {val} (an observation about the past — "
-                f"always answer in the language of their CURRENT message)")
+                f"Общался с тобой на: {val} (это наблюдение о прошлом — "
+                f"всегда отвечай на языке ТЕКУЩЕГО сообщения)")
         else:
             core_lines.append(f"{field.title()}: {val}")
     for key, entry in identity.items():
@@ -240,7 +246,7 @@ def format_memory_for_prompt(memory: dict | None) -> str:
         if val:
             core_lines.append(f"{_pretty(key).title()}: {val}")
 
-    # 2. Everything else, most recently updated first
+    # 2. Всё остальное — сначала самое свежее по дате обновления
     rest: list[tuple[str, str, str, str]] = []   # (updated, cat, key, value)
     for cat in _CATEGORY_LABELS:
         for key, entry in (memory.get(cat, {}) or {}).items():
@@ -255,11 +261,11 @@ def format_memory_for_prompt(memory: dict | None) -> str:
     shown: dict[str, list[str]] = {}
     overflow: dict[str, list[str]] = {}
 
-    # Recency decides order, but no single category may take the whole budget.
-    # Without the cap, someone with forty stored preferences gets a prompt that
-    # is forty preferences and not one person's name — the categories that
-    # matter most in conversation are also the ones that change least often, so
-    # pure recency systematically buries them.
+    # Свежесть задаёт порядок, но ни одна категория не может забрать весь бюджет.
+    # Без ограничений у человека с сорока сохранёнными предпочтениями промпт
+    # состоит из сорока предпочтений и ни одного имени — а ведь именно те
+    # категории, которые важнее всего в разговоре, меняются реже всего, поэтому
+    # чистая свежесть систематически их закапывает.
     per_cat_used: dict[str, int] = {}
     for _updated, cat, key, val in rest:
         line = f"  - {_pretty(key).title()}: {val}"
@@ -271,11 +277,12 @@ def format_memory_for_prompt(memory: dict | None) -> str:
         else:
             overflow.setdefault(cat, []).append(_pretty(key))
 
-    # The index is a table of contents, so it is interleaved across categories
-    # rather than continuing in recency order. Sorted by recency it would list
-    # twenty-four preferences before the first relationship, and the one entry
-    # the index exists for — the old fact the model has no other way to know
-    # about — would fall off the end.
+    # Указатель — это оглавление, поэтому он перемешан по категориям, а не идёт
+    # дальше в порядке свежести. Отсортированный по свежести, он перечислил бы
+    # двадцать четыре предпочтения раньше первого упоминания о человеке из его
+    # окружения — и та единственная запись, ради которой указатель и существует
+    # (старый факт, о котором модели больше неоткуда узнать), отвалилась бы в
+    # конце.
     indexed: list[str] = []
     if overflow:
         cats  = [c for c in _CATEGORY_LABELS if overflow.get(c)]
@@ -299,11 +306,11 @@ def format_memory_for_prompt(memory: dict | None) -> str:
         return ""
 
     out = [
-        "[WHAT YOU KNOW ABOUT THIS PERSON — use naturally, never recite like a list]",
+        "[ЧТО ТЫ ЗНАЕШЬ ОБ ЭТОМ ЧЕЛОВЕКЕ — используй естественно, не перечисляй как список]",
         *core_lines,
     ]
 
-    # 3. The index of what is on disk but not in this prompt
+    # 3. Указатель того, что есть на диске, но не попало в этот промпт
     if indexed:
         budget, names = PROMPT_INDEX_CHARS, []
         for n in indexed:
@@ -314,22 +321,22 @@ def format_memory_for_prompt(memory: dict | None) -> str:
         if names:
             out.append("")
             out.append(
-                "[ALSO REMEMBERED — values not shown here. Call recall_memory "
-                "with a keyword to read any of these before saying you do not know]"
+                "[ALSO REMEMBERED — значений здесь нет. Вызови recall_memory "
+                "с ключевым словом, чтобы прочитать любое из них, прежде чем говорить, что не знаешь]"
             )
             out.append(", ".join(names)
-                       + (f" (+{len(indexed) - len(names)} more)"
+                       + (f" (+ещё {len(indexed) - len(names)})"
                           if len(indexed) > len(names) else ""))
 
     return "\n".join(out) + "\n"
 
 
-# ── Recall ────────────────────────────────────────────────────────────────────
+# ── Вспоминание ───────────────────────────────────────────────────────────────
 
 def _score(query_words: list[str], cat: str, key: str, value: str) -> int:
-    """Cheap lexical relevance. No embeddings, no network, no model call - this
-    runs in well under a millisecond, which is the entire point: recall must
-    cost one model round trip, never two."""
+    """Дешёвая лексическая релевантность. Без эмбеддингов, без сети, без вызова
+    модели — это выполняется заметно меньше миллисекунды, и в этом весь смысл:
+    вспоминание должно стоить один круг модели, никогда не два."""
     hay_key = _pretty(key).lower()
     hay_val = value.lower()
     score   = 0
@@ -348,17 +355,17 @@ def _score(query_words: list[str], cat: str, key: str, value: str) -> int:
 
 
 def search_memory(query: str, limit: int = 8) -> str:
-    """Find stored facts matching `query`. Backs the recall_memory tool.
+    """Найти сохранённые факты, подходящие под `query`. Обслуживает инструмент recall_memory.
 
-    An empty query is treated as "show me everything you know", capped - the
-    model asks that when the user says "what do you remember about me?"."""
+    Пустой запрос трактуется как «покажи всё, что ты знаешь», с ограничением —
+    модель задаёт его, когда пользователь говорит «что ты обо мне помнишь?»."""
     memory = load_memory()
     words  = [w for w in re.split(r"[^\w]+", (query or "").lower()) if len(w) > 1]
 
     rows: list[tuple[int, str, str, str]] = []
     for cat, items in memory.items():
         if not isinstance(items, dict):
-            continue                     # skip 'sessions', which is a list
+            continue                     # пропускаем 'sessions' — это список
         for key, entry in items.items():
             val = _entry_value(entry)
             if not val:
@@ -368,21 +375,21 @@ def search_memory(query: str, limit: int = 8) -> str:
                 rows.append((s, cat, key, val))
 
     if not rows:
-        return (f"Nothing stored about '{query}'." if query
-                else "I have not stored anything about this person yet.")
+        return (f"Ничего не сохранено о «{query}»." if query
+                else "Я пока ничего не сохранил об этом человеке.")
 
     rows.sort(key=lambda r: (-r[0], r[2]))
     lines = [f"{cat}/{_pretty(key)}: {val}" for _s, cat, key, val in rows[:max(1, limit)]]
-    head  = (f"Stored facts matching '{query}':" if query
-             else "Everything currently stored:")
-    more  = (f"\n(+{len(rows) - len(lines)} more — search with a narrower keyword)"
+    head  = (f"Сохранённые факты, подходящие под «{query}»:" if query
+             else "Всё сохранённое на данный момент:")
+    more  = (f"\n(+ещё {len(rows) - len(lines)} — уточни поиск более узким ключевым словом)"
              if len(rows) > len(lines) else "")
     return head + "\n" + "\n".join(lines) + more
 
 
 def all_entries_for_ui() -> list[dict]:
-    """Flat list for the memory panel: what Anfisa knows, and when it learned it.
-    Sorted newest first so the panel opens on what changed most recently."""
+    """Плоский список для панели памяти: что Анфиса знает и когда это узнала.
+    Отсортирован от новых к старым, чтобы панель открывалась самым свежим."""
     memory = load_memory()
     rows = []
     for cat, items in memory.items():
@@ -406,7 +413,7 @@ def remember(key: str, value: str, category: str = "notes") -> str:
     if category not in valid:
         category = "notes"
     update_memory({category: {key: {"value": value}}})
-    return f"Remembered: {category}/{key} = {value}"
+    return f"Запомнил: {category}/{key} = {value}"
 
 
 def forget(key: str, category: str = "notes") -> str:
@@ -416,20 +423,20 @@ def forget(key: str, category: str = "notes") -> str:
         del cat[key]
         memory[category] = cat
         save_memory(memory)
-        return f"Forgotten: {category}/{key}"
-    return f"Not found: {category}/{key}"
+        return f"Забыто: {category}/{key}"
+    return f"Не найдено: {category}/{key}"
 
 
 forget_memory = forget
 
 
-# ── Session memory ─────────────────────────────────────────────────────────────
+# ── Память сессий ─────────────────────────────────────────────────────────────
 
-_SESSION_MAX = 3   # safety cap — in practice 0-1 entries after pop
+_SESSION_MAX = 3   # страховочный предел — фактически после pop остаётся 0-1 записей
 
 
 def save_session_summary(summary: str, language: str = "") -> None:
-    """Append a 1-2 sentence session summary to long_term.json['sessions']."""
+    """Дописать краткое резюме сессии в 1-2 предложения в long_term.json['sessions']."""
     summary = (summary or "").strip()
     if not summary:
         return
@@ -451,13 +458,13 @@ def save_session_summary(summary: str, language: str = "") -> None:
             json.dumps(memory, indent=2, ensure_ascii=False),
             encoding="utf-8",
         )
-    print(f"[Memory] 📝 Session saved ({entry['date']}): {summary[:60]}…")
+    print(f"[Memory] 📝 Сессия сохранена ({entry['date']}): {summary[:60]}…")
 
 
 def pop_last_session() -> dict | None:
     """
-    Return AND remove the most recent session entry.
-    Calling this consumes the entry so it is never repeated in future briefings.
+    Вернуть И УДАЛИТЬ самую свежую запись сессии.
+    Этот вызов потребляет запись, поэтому она никогда не повторится в будущих брифингах.
     """
     with _lock:
         if not MEMORY_PATH.exists():
@@ -467,7 +474,7 @@ def pop_last_session() -> dict | None:
             sessions = memory.get("sessions", [])
             if not isinstance(sessions, list) or not sessions:
                 return None
-            entry = sessions.pop()          # remove the last entry
+            entry = sessions.pop()          # удаляем последнюю запись
             memory["sessions"] = sessions
             MEMORY_PATH.write_text(
                 json.dumps(memory, indent=2, ensure_ascii=False),

@@ -1,20 +1,20 @@
 """
-Local LLM client for Anfisa XL.
+Клиент локальной LLM для Anfisa XL.
 
-Supports two backends — selected via  "llm_provider"  in config/api_keys.json:
+Поддерживает два бэкенда — выбирается через  "llm_provider"  в config/api_keys.json:
 
-  "llm_provider": "ollama"   (default)
-        Uses Ollama's native /api/chat endpoint.
-        Download: https://ollama.com
-        Default port: 11434
+  "llm_provider": "ollama"   (по умолчанию)
+        Использует нативный эндпоинт Ollama /api/chat.
+        Скачать: https://ollama.com
+        Порт по умолчанию: 11434
 
   "llm_provider": "openai"
-        Uses any OpenAI-compatible server: LM Studio, Jan, LocalAI,
-        llama.cpp server, vLLM, etc.
-        LM Studio download: https://lmstudio.ai   (default port: 1234)
-        Set  "llm_url": "http://localhost:1234"  in config.
-        Note: tool-calling support depends on the model; use a model that
-        supports function/tool calls (e.g. Qwen2.5, Llama-3.1, Mistral).
+        Использует любой OpenAI-совместимый сервер: LM Studio, Jan, LocalAI,
+        llama.cpp server, vLLM и т. п.
+        Скачать LM Studio: https://lmstudio.ai   (порт по умолчанию: 1234)
+        Укажите  "llm_url": "http://localhost:1234"  в конфиге.
+        Примечание: поддержка вызова инструментов зависит от модели; берите такую,
+        которая умеет function/tool calls (например Qwen2.5, Llama-3.1, Mistral).
 """
 import json
 import re
@@ -26,8 +26,8 @@ from typing import Callable, Generator
 
 import requests
 
-# Matches a sentence boundary: [.!?] followed by whitespace, or a blank line.
-# Avoids splitting on decimals (3.5) because those have no space after the dot.
+# Ловит границу предложения: [.!?] после которых идёт пробел, либо пустая строка.
+# Не режет десятичные числа (3.5), потому что после точки в них нет пробела.
 _SENT_END = re.compile(r'(?<=[.!?])\s+|(?<=\n)\s*\n')
 
 def get_base_dir() -> Path:
@@ -47,7 +47,7 @@ _DEFAULTS = {
 
 
 def get_llm_provider() -> str:
-    """Returns 'ollama' or 'openai' (covers LM Studio, LocalAI, Jan, etc.)."""
+    """Возвращает 'ollama' или 'openai' (покрывает LM Studio, LocalAI, Jan и т. п.)."""
     raw = _load_config().get("llm_provider", "ollama").strip().lower()
     return "openai" if raw in ("openai", "lmstudio", "localai", "jan", "llamacpp") else "ollama"
 
@@ -61,28 +61,28 @@ def _load_config() -> dict:
 
 def ensure_ollama_running(timeout: int = 15) -> bool:
     """
-    For Ollama: ping /api/tags; auto-launch 'ollama serve' if not running.
-    For OpenAI-compatible providers: just ping /v1/models (server must be started manually).
-    Returns True if the LLM server is reachable.
+    Для Ollama: пинг /api/tags; если не запущен — сам поднимает 'ollama serve'.
+    Для OpenAI-совместимых провайдеров: просто пинг /v1/models (сервер надо запускать вручную).
+    Возвращает True, если LLM-сервер доступен.
     """
     url, _   = get_llm_settings()
     provider = get_llm_provider()
 
     if provider == "openai":
-        # OpenAI-compatible servers (LM Studio, LocalAI, etc.) must be started
-        # by the user — we just check if they're reachable.
+        # OpenAI-совместимые серверы (LM Studio, LocalAI и т. п.) пользователь
+        # запускает сам — мы только проверяем, доступны ли они.
         health = f"{url}/v1/models"
         try:
             ok = requests.get(health, timeout=5).status_code == 200
             if ok:
-                print(f"[LLM] OpenAI-compatible server reachable at {url}")
+                print(f"[LLM] OpenAI-совместимый сервер доступен по адресу {url}")
             else:
-                print(f"[LLM] Server at {url} returned non-200.  Is it running?")
+                print(f"[LLM] Сервер по адресу {url} ответил не кодом 200.  Он запущен?")
             return ok
         except Exception as e:
             print(
-                f"[LLM] Cannot reach OpenAI-compatible server at {url}.\n"
-                "      Make sure LM Studio / LocalAI / Jan is running and the server is started."
+                f"[LLM] Нет связи с OpenAI-совместимым сервером по адресу {url}.\n"
+                "      Убедитесь, что LM Studio / LocalAI / Jan запущен и сервер поднят."
             )
             return False
 
@@ -98,48 +98,50 @@ def ensure_ollama_running(timeout: int = 15) -> bool:
     if _is_up():
         return True
 
-    print("[LLM] Ollama not running — launching 'ollama serve'…")
+    print("[LLM] Ollama не запущен — поднимаю 'ollama serve'…")
     try:
         kwargs: dict = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
         if sys.platform == "win32":
             kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
         subprocess.Popen(["ollama", "serve"], **kwargs)
     except FileNotFoundError:
-        print("[LLM] 'ollama' command not found. Install Ollama from https://ollama.com")
+        print("[LLM] Команда 'ollama' не найдена. Установите Ollama: https://ollama.com")
         return False
     except Exception as e:
-        print(f"[LLM] Could not launch Ollama: {e}")
+        print(f"[LLM] Не удалось запустить Ollama: {e}")
         return False
 
     deadline = time.time() + timeout
     while time.time() < deadline:
         time.sleep(1.0)
         if _is_up():
-            print("[LLM] Ollama started successfully.")
+            print("[LLM] Ollama успешно запущен.")
             return True
 
-    print("[LLM] Ollama did not respond within the timeout.")
+    print("[LLM] Ollama не ответил до истечения таймаута.")
     return False
 
 
 def warmup_model(system_prompt: str | None = None) -> bool:
     """
-    Pre-load the model AND prime Ollama's KV prefix cache.
+    Предзагрузить модель И прогреть префиксный KV-кэш Ollama.
 
-    Why the system_prompt matters
+    Почему важен system_prompt
     ─────────────────────────────
-    Ollama caches the KV attention state of the prompt prefix across requests.
-    If warmup includes the same system prompt that real requests will use, Ollama
-    evaluates those tokens ONCE at startup.  Every subsequent request only needs
-    to evaluate the small delta (user message ± time context) instead of the full
-    300-500 token system prompt → drops first-token latency from ~17 s to <1 s.
+    Ollama кэширует KV-состояние внимания префикса промпта между запросами.
+    Если прогрев использует тот же системный промпт, что и настоящие запросы,
+    Ollama один раз обсчитывает эти токены при старте. Дальше каждому
+    запросу нужно обсчитать только небольшой остаток (сообщение пользователя
+    ± контекст времени) вместо всего системного промпта на 300-500 токенов →
+    задержка до первого токена падает с ~17 с до <1 с.
 
-    Pass the *static* part of the system prompt (the Anfisa protocol text, without
-    timestamps or per-minute context) so the prefix stays valid across calls.
+    Передавайте *статичную* часть системного промпта (текст протокола Anfisa
+    без меток времени и контекста, меняющегося каждую минуту), чтобы префикс
+    оставался валидным между вызовами.
     """
     url, model = get_llm_settings()
     provider   = get_llm_provider()
-    print(f"[LLM] Warming up '{model}' ({provider})…")
+    print(f"[LLM] Прогрев '{model}' ({provider})…")
 
     messages: list[dict] = []
     if system_prompt:
@@ -147,8 +149,8 @@ def warmup_model(system_prompt: str | None = None) -> bool:
     messages.append({"role": "user", "content": "hi"})
 
     if provider == "openai":
-        # OpenAI-compatible: just fire a minimal request to ensure the model is loaded.
-        # No keep_alive or KV-cache priming available — server manages this internally.
+        # OpenAI-совместимый: просто отправляем минимальный запрос, чтобы модель загрузилась.
+        # Ни keep_alive, ни прогрева KV-кэша здесь нет — сервер управляет этим сам.
         payload = {
             "model":      model,
             "messages":   messages,
@@ -158,10 +160,10 @@ def warmup_model(system_prompt: str | None = None) -> bool:
         try:
             resp = requests.post(f"{url}/v1/chat/completions", json=payload, timeout=180)
             resp.raise_for_status()
-            print(f"[LLM] '{model}' ready (OpenAI-compatible server).")
+            print(f"[LLM] '{model}' готова (OpenAI-совместимый сервер).")
             return True
         except Exception as e:
-            print(f"[LLM] Warmup failed (non-fatal): {e}")
+            print(f"[LLM] Прогрев не удался (не критично): {e}")
             return False
 
     # ── Ollama ──────────────────────────────────────────────────────────────
@@ -170,25 +172,25 @@ def warmup_model(system_prompt: str | None = None) -> bool:
         "messages":   messages,
         "stream":     False,
         "keep_alive": -1,
-        # num_gpu:99 → push ALL transformer layers to GPU (Ollama caps at available)
-        # This is safe even without a GPU — Ollama silently ignores if n_gpu_layers=0
+        # num_gpu:99 → загнать ВСЕ слои трансформера на GPU (Ollama обрежет до доступного)
+        # Это безопасно даже без GPU — Ollama молча проигнорирует, если n_gpu_layers=0
         "options":    {"num_predict": 1, "num_gpu": 99},
     }
     try:
         resp = requests.post(f"{url}/api/chat", json=payload, timeout=180)
         resp.raise_for_status()
-        print(f"[LLM] '{model}' loaded and KV cache primed.")
+        print(f"[LLM] '{model}' загружена, KV-кэш прогрет.")
         return True
     except Exception as e:
-        print(f"[LLM] Warmup failed (non-fatal): {e}")
+        print(f"[LLM] Прогрев не удался (не критично): {e}")
         return False
 
 
 def check_model_available(log: Callable | None = None) -> bool:
     """
-    Returns True if the configured model is already pulled in Ollama.
-    Logs an actionable warning (to console + optional UI callback) if not.
-    Always returns True for non-Ollama providers (cannot inspect their model list).
+    Возвращает True, если настроенная модель уже скачана в Ollama.
+    Если нет — пишет практичное предупреждение (в консоль + необязательному UI-колбэку).
+    Для не-Ollama провайдеров всегда True (их список моделей не посмотреть).
     """
     if get_llm_provider() != "ollama":
         return True
@@ -204,22 +206,22 @@ def check_model_available(log: Callable | None = None) -> bool:
             for m in pulled
         )
         if not found:
-            available = ", ".join(pulled) if pulled else "none"
+            available = ", ".join(pulled) if pulled else "нет"
             warn = (
-                f"WRN: Model '{model}' is not pulled in Ollama.\n"
-                f"     Available: {available}\n"
-                f"     Fix: ollama pull {model}"
+                f"WRN: Модель '{model}' не скачана в Ollama.\n"
+                f"     Доступно: {available}\n"
+                f"     Исправьте: ollama pull {model}"
             )
             print(warn)
             if log:
-                log(f"WRN: '{model}' not found — run: ollama pull {model}")
+                log(f"WRN: '{model}' не найдена — выполните: ollama pull {model}")
         return found
     except Exception:
-        return True   # Ollama might still be starting up; non-blocking
+        return True   # Ollama ещё может стартовать; не блокируем
 
 
 def get_llm_settings() -> tuple[str, str]:
-    """Returns (base_url, model_name)."""
+    """Возвращает (base_url, model_name)."""
     cfg   = _load_config()
     url   = cfg.get("llm_url",   _DEFAULTS["llm_url"]).rstrip("/")
     model = cfg.get("llm_model", _DEFAULTS["llm_model"])
@@ -232,9 +234,9 @@ def call_llm(
     timeout:  int = 120,
 ) -> dict:
     """
-    Non-streaming chat request.  Routes to Ollama or OpenAI-compatible backend.
+    Запрос в чат без стриминга.  Направляет в Ollama либо OpenAI-совместимый бэкенд.
 
-    Returns:
+    Возвращает:
         {"content": str, "tool_calls": list}
     """
     url, model = get_llm_settings()
@@ -256,7 +258,7 @@ def call_llm(
             resp.raise_for_status()
             choice = resp.json().get("choices", [{}])[0]
             msg    = choice.get("message", {})
-            # OpenAI tool_calls format → normalise to Ollama-style
+            # Формат tool_calls у OpenAI → нормализуем к стилю Ollama
             raw_tc  = msg.get("tool_calls") or []
             tc_list = [
                 {
@@ -277,7 +279,7 @@ def call_llm(
                 "tool_calls": tc_list,
             }
         except Exception as e:
-            raise RuntimeError(f"OpenAI-compatible LLM call failed: {e}")
+            raise RuntimeError(f"LLM-запрос (OpenAI-совместимый) не удался: {e}")
 
     # ── Ollama ──────────────────────────────────────────────────────────────
     endpoint = f"{url}/api/chat"

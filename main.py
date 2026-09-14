@@ -1,32 +1,32 @@
 import platform as _platform
 import subprocess as _subprocess
 
-# ── Nuclear: force CREATE_NO_WINDOW on EVERY subprocess call on Windows ───────
-# This patches Popen itself, so no per-file flag is needed anywhere.
+# ── Радикально: навязываем CREATE_NO_WINDOW КАЖДОМУ вызову subprocess на Windows ─
+# Патчится сам Popen, поэтому флаг в отдельных файлах не нужен нигде.
 if _platform.system() == "Windows":
     _OrigPopen = _subprocess.Popen
 
     class _Popen(_OrigPopen):
         def __init__(self, args, **kw):
             kw["creationflags"] = kw.get("creationflags", 0) | _subprocess.CREATE_NO_WINDOW
-            kw.pop("startupinfo", None)   # drop any stale/shared STARTUPINFO
+            kw.pop("startupinfo", None)   # сбрасываем любой устаревший/общий STARTUPINFO
             super().__init__(args, **                       kw)
 
     _subprocess.Popen = _Popen
 
 # ─────────────────────────────────────────────────────────────────────────────
 
-# ── Console encoding ─────────────────────────────────────────────────────────
-# Status lines in this app carry emoji and arrows ("📤 file_controller → Moved:
-# a.txt → Documents/"). On a non-UTF-8 console — cp1254 on a Turkish Windows,
-# cp1251 on a Russian one, cp932 on a Japanese one — printing one of those
-# raises UnicodeEncodeError, and because the print sits after the tool's own
-# try/except, the exception escapes into the receive loop and takes the session
-# down. The assistant dies on a log line.
+# ── Кодировка консоли ────────────────────────────────────────────────────────
+# Строки статуса в этом приложении содержат эмодзи и стрелки («📤 file_controller
+# → Moved: a.txt → Documents/»). В консоли с не-UTF-8 — cp1254 на турецкой Windows,
+# cp1251 на русской, cp932 на японской — печать такой строки raises
+# UnicodeEncodeError, и поскольку print стоит после try/except самого инструмента,
+# исключение уходит в приёмный цикл и рвёт сессию. Ассистент умирает на строке лога.
 #
-# Reconfiguring costs nothing and makes the app start the same way in every
-# locale. `errors="replace"` is the belt and braces — a console that genuinely
-# cannot render a glyph shows a box instead of killing the process.
+# Переконфигурирование ничего не стоит и заставляет приложение запускаться
+# одинаково в любой локали. `errors="replace"` — дополнительная страховка: консоль,
+# которая действительно не может отрисовать глиф, покажет квадратик вместо того,
+# чтобы убивать процесс.
 import sys as _sys
 for _stream in (_sys.stdout, _sys.stderr):
     try:
@@ -55,10 +55,10 @@ from memory.memory_manager import (
     search_memory, set_trim_notifier,
 )
 
-# The file-backed tools (open_app, web_search, browser_control, …) are no longer
-# imported or declared here — they self-describe via a TOOL dict in their own
-# actions/*.py file and are auto-discovered by core.action_loader at startup.
-# Only tools that are tied to live-session state stay inline in this file
+# Файловые инструменты (open_app, web_search, browser_control, …) здесь больше не
+# импортируются и не объявляются — они описывают себя сами через dict TOOL в своём
+# файле actions/*.py и обнаруживаются core.action_loader при запуске.
+# В этом файле остаются только инструменты, привязанные к состоянию живой сессии
 # (screen_process, close_camera, save_memory, manage_monitor, shutdown_Anfisa,
 # system_status).
 from actions.screen_processor  import _capture_camera, _capture_screen
@@ -80,9 +80,9 @@ from core.wake_word            import (
     WakeWordDetector, is_ready as wake_is_ready, install_and_download as wake_install,
 )
 
-# How long the assistant stays awake with no user speech before it auto-sleeps
-# again (wake-word mode only).
-WAKE_SLEEP_TIMEOUT = 120.0   # seconds (2 minutes)
+# Сколько секунд ассистент остаётся бодрым без речи пользователя, прежде чем
+# снова уснуть автоматически (режим слова пробуждения).
+WAKE_SLEEP_TIMEOUT = 120.0   # секунд (2 минуты)
 
 def get_base_dir():
     if getattr(sys, "frozen", False):
@@ -98,16 +98,17 @@ SEND_SAMPLE_RATE    = 16000
 RECEIVE_SAMPLE_RATE = 24000
 CHUNK_SIZE          = 1024
 
-# RMS below which 16-bit PCM is treated as room silence; above _LEVEL_FULL it
-# reads as a full-height waveform. Tuned so ordinary speech lands mid-range and
-# the bars still move for a quiet talker — language- and device-independent.
+# RMS, ниже которого 16-битный PCM считается тишиной в комнате; выше _LEVEL_FULL
+# волна рисуется на всю высоту. Настроено так, чтобы обычная речь попадала в среднюю
+# часть шкалы, а полосы продолжали двигаться и при тихом голосе — не зависит ни от
+# языка, ни от устройства.
 _LEVEL_FLOOR = 60.0
 _LEVEL_FULL  = 2600.0
 
 
 def _pcm_level(samples) -> float:
-    """Map a block of int16 PCM samples to a 0.0–1.0 loudness level for the HUD
-    waveform. Returns 0.0 on empty/invalid input so it can never raise."""
+    """Переводит блок int16 PCM-сэмплов в уровень громкости 0.0–1.0 для волны на HUD.
+    На пустом/некорректном входе возвращает 0.0, поэтому никогда не бросает исключение."""
     try:
         x = np.asarray(samples, dtype=np.float32)
         if x.size == 0:
@@ -143,18 +144,19 @@ def _clean_transcript(text: str) -> str:
     return text.strip()
 
 TOOL_DECLARATIONS = [
-    # ── Inline tools ─────────────────────────────────────────────────────────
-    # These stay here (rather than in an actions/*.py TOOL dict) because their
-    # handling is woven into live-session state — vision capture/injection,
-    # camera stream, memory writes, the monitor engine, and shutdown. All other
-    # tools live in their own action file and are auto-discovered by
-    # core.action_loader (see AnfisaLive.__init__).
+    # ── Встроенные инструменты ───────────────────────────────────────────────
+    # Они остаются здесь (а не в dict TOOL внутри actions/*.py), потому что их
+    # обработка вплетена в состояние живой сессии — захват/инъекция vision,
+    # поток камеры, записи в память, монитор-движок и завершение работы. Все
+    # остальные инструменты живут в своём файле действий и обнаруживаются
+    # автоматически через core.action_loader (см. AnfisaLive.__init__).
     {
         "name": "system_status",
         "description": (
-            "Returns real-time system metrics: CPU usage, RAM, GPU load, CPU temperature, "
-            "uptime, and process count. Use when the user asks about computer performance, "
-            "temperature, memory, or resource usage."
+            "Возвращает метрики системы в реальном времени: загрузку CPU, ОЗУ, GPU, "
+            "температуру процессора, время работы и число процессов. Используй, когда "
+            "пользователь спрашивает о производительности компьютера, температуре, "
+            "памяти или расходе ресурсов."
         ),
         "parameters": {
             "type": "OBJECT",
@@ -164,18 +166,18 @@ TOOL_DECLARATIONS = [
     {
         "name": "screen_process",
         "description": (
-            "Captures the screen or webcam image and lets you analyze it. "
-            "MUST be called when user asks what is on screen, what you see, "
-            "look at camera, analyze my screen, etc. "
-            "You have NO visual ability without this tool. "
-            "After the image is captured it is sent directly to you — describe what you see and answer the user's question. "
-            "When using camera: the live view stays open until user says close it or calls close_camera."
+            "Захватывает изображение экрана или веб-камеры, чтобы ты мог его проанализировать. "
+            "Обязательно вызывай, когда пользователь спрашивает, что на экране, "
+            "что ты видишь, просит посмотреть в камеру, проанализировать экран и т. п. "
+            "Без этого инструмента ты вообще ничего не видишь. "
+            "После захвата изображение отправляется напрямую тебе — опиши, что ты видишь, и ответь на вопрос пользователя. "
+            "При работе с камерой: живое окно остаётся открытым, пока пользователь не скажет его закрыть или не вызовет close_camera."
         ),
         "parameters": {
             "type": "OBJECT",
             "properties": {
-                "angle": {"type": "STRING", "description": "'screen' to capture display, 'camera' for webcam. Default: 'screen'"},
-                "text":  {"type": "STRING", "description": "The question or instruction about the captured image"}
+                "angle": {"type": "STRING", "description": "'screen' — захватить экран, 'camera' — веб-камера. По умолчанию: 'screen'"},
+                "text":  {"type": "STRING", "description": "Вопрос или указание про захваченное изображение"}
             },
             "required": ["text"]
         }
@@ -183,21 +185,21 @@ TOOL_DECLARATIONS = [
     {
         "name": "close_camera",
         "description": (
-            "Closes the live camera view shown on screen. "
-            "Call when the user says (in ANY language): close camera, stop camera, "
-            "turn off camera, that's creepy, etc."
+            "Закрывает показанное на экране живое окно камеры. "
+            "Вызывай, когда пользователь говорит (НА ЛЮБОМ языке): закрой камеру, "
+            "выключи камеру, стоп камера, это жутко и т. п."
         ),
         "parameters": {"type": "OBJECT", "properties": {}, "required": []}
     },
     {
         "name": "manage_monitor",
         "description": (
-            "Add, remove, or list background monitoring topics. "
-            "Anfisa checks these topics once a day and alerts the user when there is a new development. "
-            "Use 'add' when the user says 'monitor X', 'track X', 'follow X'. "
-            "Use 'remove' when the user says 'stop monitoring X'. "
-            "Use 'list' when the user asks what is being monitored. "
-            "Do NOT add crypto, financial, or trading topics."
+            "Добавить, удалить или показать список фоновых тем наблюдения. "
+            "Анфиса проверяет эти темы раз в день и уведомляет пользователя, когда появляется новое развитие событий. "
+            "Используй 'add', когда пользователь говорит «следи за X», «отслеживай X», «мониторь X». "
+            "Используй 'remove', когда пользователь говорит «прекрати следить за X». "
+            "Используй 'list', когда пользователь спрашивает, за чем идёт наблюдение. "
+            "НЕ добавляй крипто, финансовые и торговые темы."
         ),
         "parameters": {
             "type": "OBJECT",
@@ -208,7 +210,7 @@ TOOL_DECLARATIONS = [
                 },
                 "topic": {
                     "type":        "STRING",
-                    "description": "Topic to monitor or stop monitoring (e.g. 'space exploration', 'AI news')",
+                    "description": "Тема наблюдения или тема, за которой перестаём следить (напр. 'space exploration', 'AI news')",
                 },
             },
             "required": ["action"],
@@ -217,10 +219,10 @@ TOOL_DECLARATIONS = [
     {
         "name": "shutdown_Anfisa",
         "description": (
-            "Shuts down the assistant completely. "
-            "Call this when the user expresses intent to end the conversation, "
-            "close the assistant, say goodbye, or stop Anfisa. "
-            "The user can say this in ANY language."
+            "Полностью завершает работу ассистента. "
+            "Вызывай, когда пользователь выражает намерение закончить разговор, "
+            "закрыть ассистента, попрощаться или остановить Анфису. "
+            "Пользователь может сказать это НА ЛЮБОМ языке."
         ),
         "parameters": {
             "type": "OBJECT",
@@ -230,12 +232,12 @@ TOOL_DECLARATIONS = [
     {
         "name": "save_memory",
         "description": (
-            "Save an important personal fact about the user to long-term memory. "
-            "Call this silently whenever the user reveals something worth remembering: "
-            "name, age, city, job, preferences, hobbies, relationships, projects, or future plans. "
-            "Do NOT call for: weather, reminders, searches, or one-time commands. "
-            "Do NOT announce that you are saving — just call it silently. "
-            "Values must be in English regardless of the conversation language."
+            "Сохранить важный личный факт о пользователе в долговременную память. "
+            "Вызывай молча каждый раз, когда пользователь сообщает что-то, стоящее запоминания: "
+            "имя, возраст, город, работу, предпочтения, увлечения, отношения, проекты или планы на будущее. "
+            "НЕ вызывай для: погоды, напоминаний, поисков, одноразовых команд. "
+            "НЕ объявляй, что сохраняешь — просто вызывай молча. "
+            "Значения всегда на английском, независимо от языка разговора."
         ),
         "parameters": {
             "type": "OBJECT",
@@ -243,16 +245,16 @@ TOOL_DECLARATIONS = [
                 "category": {
                     "type": "STRING",
                     "description": (
-                        "identity — name, age, birthday, city, job, language, nationality | "
-                        "preferences — favorite food/color/music/film/game/sport, hobbies | "
-                        "projects — active projects, goals, things being built | "
-                        "relationships — friends, family, partner, colleagues | "
-                        "wishes — future plans, things to buy, travel dreams | "
-                        "notes — habits, schedule, anything else worth remembering"
+                        "identity — имя, возраст, день рождения, город, работа, язык, национальность | "
+                        "preferences — любимая еда/цвет/музыка/фильм/игра/спорт, увлечения | "
+                        "projects — текущие проекты, цели, то, что строится | "
+                        "relationships — друзья, семья, партнёр, коллеги | "
+                        "wishes — планы на будущее, что купить, мечты о поездках | "
+                        "notes — привычки, расписание, всё остальное, что стоит запомнить"
                     )
                 },
-                "key":   {"type": "STRING", "description": "Short snake_case key (e.g. name, favorite_food, sister_name)"},
-                "value": {"type": "STRING", "description": "Concise value in English (e.g. Fatih, pizza, older sister)"},
+                "key":   {"type": "STRING", "description": "Короткий ключ в snake_case (напр. name, favorite_food, sister_name)"},
+                "value": {"type": "STRING", "description": "Краткое значение на английском (напр. Fatih, pizza, older sister)"},
             },
             "required": ["category", "key", "value"]
         }
@@ -260,15 +262,15 @@ TOOL_DECLARATIONS = [
     {
         "name": "recall_memory",
         "description": (
-            "Look up a fact you have stored about the user but which is NOT in "
-            "the memory block of your system prompt. "
-            "The prompt lists the keys it did not have room for under "
-            "'[ALSO REMEMBERED]' — if the user asks about anything named there, "
-            "call this FIRST. "
-            "Also call it before saying you do not know something personal, and "
-            "when the user asks what you remember about them (leave query empty "
-            "for everything). "
-            "This is a local file search: it is instant and costs nothing."
+            "Найти факт о пользователе, который ты сохранил, но которого НЕТ "
+            "в блоке памяти твоего системного промпта. "
+            "В промпте под '[ALSO REMEMBERED]' перечислены ключи, для которых "
+            "не хватило места — если пользователь спрашивает про что-то из этого списка, "
+            "сначала вызови этот инструмент. "
+            "Также вызывай его, прежде чем сказать, что не знаешь чего-то личного, и "
+            "когда пользователь спрашивает, что ты о нём помнишь (оставь query пустым, "
+            "чтобы получить всё). "
+            "Это локальный поиск по файлу: мгновенно и бесплатно."
         ),
         "parameters": {
             "type": "OBJECT",
@@ -276,9 +278,9 @@ TOOL_DECLARATIONS = [
                 "query": {
                     "type": "STRING",
                     "description": (
-                        "Keyword to search for — a name, a topic, a category "
-                        "(e.g. 'ayse', 'coffee', 'projects'). "
-                        "Leave empty to list everything stored."
+                        "Ключевое слово для поиска — имя, тема, категория "
+                        "(напр. 'ayse', 'coffee', 'projects'). "
+                        "Оставь пустым, чтобы показать всё сохранённое."
                     ),
                 },
             },
@@ -288,22 +290,22 @@ TOOL_DECLARATIONS = [
     {
         "name": "undo",
         "description": (
-            "Reverse the last change YOU made to this computer — a file you "
-            "moved, renamed, created or wrote, or a setting you changed such as "
-            "volume, brightness, dark mode or WiFi. "
-            "Call this whenever the user says undo, revert, take it back, put it "
-            "back, cancel that, or tells you that you did the wrong thing, in ANY "
-            "language. "
-            "Use action='list' when they ask what can be undone. "
-            "This only covers your own actions — it is not the Ctrl+Z of whatever "
-            "application is on screen (that is computer_settings with action 'undo')."
+            "Отменить последнее изменение, СДЕЛАННОЕ ТОБОЙ на этом компьютере, — файл, который ты "
+            "переместил, переименовал, создал или записал, либо настройку, которую ты изменил, такую как "
+            "громкость, яркость, тёмная тема или WiFi. "
+            "Вызывай, когда пользователь говорит undo, revert, take it back, put it "
+            "back, cancel that или говорит, что ты сделал не то, на ЛЮБОМ "
+            "языке. "
+            "Используй action='list', когда он спрашивает, что можно отменить. "
+            "Это касается только твоих собственных действий — это не Ctrl+Z для того приложения, "
+            "которое сейчас на экране (это computer_settings с действием 'undo')."
         ),
         "parameters": {
             "type": "OBJECT",
             "properties": {
                 "action": {
                     "type": "STRING",
-                    "description": "undo (default) — reverse the last change | list — show what can be undone",
+                    "description": "undo (по умолчанию) — отменить последнее изменение | list — показать, что можно отменить",
                 },
             },
             "required": [],
@@ -312,14 +314,14 @@ TOOL_DECLARATIONS = [
 ]
 
 class _ReconnectSignal(Exception):
-    """Raised inside the session TaskGroup to force a clean, voluntary reconnect
-    (e.g. the user picked a new voice — the voice is fixed at connect time, so
-    the session must be rebuilt).
+    """Бросается внутри TaskGroup сессии, чтобы форсировать чистое, добровольное
+    переподключение (напр. пользователь выбрал новый голос — голос фиксируется в
+    момент подключения, поэтому сессию нужно пересобрать).
 
-    Carries `keep_context`: True for an ordinary rebuild, where the stored
-    resumption handle is replayed and the conversation continues; False when the
-    new session must genuinely start clean (see the voice-change note in
-    _on_voice_change)."""
+    Несёт `keep_context`: True для обычной пересборки, когда сохранённый
+    handle возобновления воспроизводится и разговор продолжается; False, когда
+    новая сессия должна действительно начаться с чистого листа (см. заметку о
+    смене голоса в _on_voice_change)."""
 
     def __init__(self, keep_context: bool = True):
         super().__init__()
@@ -327,8 +329,8 @@ class _ReconnectSignal(Exception):
 
 
 def _is_reconnect_signal(exc: BaseException) -> bool:
-    """True if `exc` is a _ReconnectSignal, or a(n) (Base)ExceptionGroup that
-    wraps one — TaskGroup bundles child exceptions into a group."""
+    """True, если `exc` — это _ReconnectSignal или (Base)ExceptionGroup, которая
+    его оборачивает: TaskGroup собирает дочерние исключения в группу."""
     if isinstance(exc, _ReconnectSignal):
         return True
     if isinstance(exc, BaseExceptionGroup):
@@ -337,9 +339,9 @@ def _is_reconnect_signal(exc: BaseException) -> bool:
 
 
 def _keep_context_of(exc: BaseException) -> bool:
-    """Read `keep_context` off a reconnect signal, unwrapping the group the
-    TaskGroup put it in. Defaults to True: an unexpected shape must not silently
-    wipe the conversation."""
+    """Достаёт `keep_context` из сигнала переподключения, раскручивая группу, в
+    которую его положил TaskGroup. По умолчанию True: неожиданная форма не должна
+    молча стирать разговор."""
     if isinstance(exc, _ReconnectSignal):
         return getattr(exc, "keep_context", True)
     if isinstance(exc, BaseExceptionGroup):
@@ -352,66 +354,66 @@ def _keep_context_of(exc: BaseException) -> bool:
 class AnfisaLive:
     def __init__(self, ui: AnfisaUI):
         self.ui             = ui
-        self._asst_name     = "JARVI    S"   # updated each session from config
+        self._asst_name     = "JARVI    S"   # обновляется каждую сессию из конфига
         self.session              = None
         self.audio_in_queue       = None
         self.out_queue            = None
         self._loop                     = None
         self._is_speaking         = False
         self._speaking_lock       = threading.Lock()
-        self._phone_active        = False   # True while phone mic is streaming; pauses PC mic
-        self._pending_vision       = None    # (img_bytes, mime_type, question, angle) to inject after tool response
-        self._vision_cam_active    = False   # True if camera was opened for vision → auto-close after response
-        self._vision_close_pending = False   # True after vision injected; next turn_complete closes camera
-        self._vision_last_time     = 0.0     # monotonic time of last screen_process call (cooldown guard)
-        self._vision_busy          = False   # True while a vision capture/inject cycle is in flight
-        self._interrupted          = False   # True while draining audio after user interrupt
+        self._phone_active        = False   # True, пока идёт стрим с телефона; ставит микрофон ПК на паузу
+        self._pending_vision       = None    # (img_bytes, mime_type, question, angle) для инъекции после ответа инструмента
+        self._vision_cam_active    = False   # True, если камера открывалась для vision → авто-закрытие после ответа
+        self._vision_close_pending = False   # True после инъекции vision; следующий turn_complete закроет камеру
+        self._vision_last_time     = 0.0     # monotonic-время последнего вызова screen_process (защита от повторов)
+        self._vision_busy          = False   # True, пока цикл захвата/инъекции vision в работе
+        self._interrupted          = False   # True, пока сливаем аудио после прерывания пользователем
         self.ui.on_text_command   = self._on_text_command
         self.ui.on_remote_clicked = self._make_remote_key
         self.ui.on_interrupt      = self.interrupt
-        self.ui.on_voice_change   = self._on_voice_change     # voice picker → rebuild session
+        self.ui.on_voice_change   = self._on_voice_change     # выбор голоса → пересборка сессии
         self.ui.on_audio_device_change = self._on_audio_device_change
         self._reconnect_event: asyncio.Event | None = None
-        self._reconnect_keep = True   # False → next rebuild drops the resumption handle
+        self._reconnect_keep = True   # False → следующая пересборка отбрасывает handle возобновления
 
-        # ── Session resumption ─────────────────────────────────────────
-        # The server issues a resumption handle every few seconds and reissues
-        # it as the conversation moves on. Before this, session_resumption was
-        # switched ON in the config and the update was never read, so the handle
-        # was thrown away and EVERY reconnect — a dropped packet, a voice change,
-        # switching microphone — started an empty session. "Unlimited sessions"
-        # leaked through exactly this hole.
+        # ── Возобновление сессии ───────────────────────────────────────────
+        # Сервер каждые несколько секунд выдаёт handle возобновления и перевыдаёт
+        # его по мере разговора. До этого session_resumption был включён в конфиге,
+        # но обновления никогда не читались — handle выбрасывался, и КАЖДОЕ
+        # переподключение — потерянный пакет, смена голоса, переключение
+        # микрофона — начинали пустую сессию. «Бессрочные сессии» текли именно
+        # через эту дыру.
         #
-        # Deliberately in RAM only, never written to disk. Persisting it would
-        # make a fresh launch continue yesterday's conversation, which sounds
-        # appealing but breaks the session-summary flow: _save_session_summary
-        # runs at shutdown and the morning briefing pops it the next day. A
-        # conversation that never ends never produces a summary, and the
-        # "yesterday we talked about…" line silently disappears.
+        # Намеренно только в ОЗУ, на диск не пишем никогда. Сохрани мы его, свежий
+        # запуск продолжил бы вчерашний разговор — звучит заманчиво, но ломает поток
+        # итога сессии: _save_session_summary срабатывает при
+        # завершении, а утренний брифинг на следующий день достаёт его оттуда.
+        # Разговор, который никогда не заканчивается, не даёт итог, и строка
+        # «вчера мы говорили про…» молча исчезает.
         self._resume_handle: str | None = None
         self._turn_done_event: asyncio.Event | None = None
         self._dashboard     = None
-        self._briefing_sent    = False          # morning briefing fires once per process
-        self._sys_monitor      = SystemMonitor()  # persistent cooldown state
+        self._briefing_sent    = False          # утренний брифинг срабатывает один раз на процесс
+        self._sys_monitor      = SystemMonitor()  # состояние пауз оповещений сохраняется между вызовами
         self._proactive        = ProactiveEngine()
-        self._last_user_speech = time.monotonic()  # updated on every user utterance
-        self._session_log: list[str] = []          # conversation turns for end-of-session summary
+        self._last_user_speech = time.monotonic()  # обновляется на каждую реплику пользователя
+        self._session_log: list[str] = []          # реплики разговора для итога в конце сессии
 
-        self._enhanced_live = True  # proactive audio; auto-disabled if the server rejects it
+        self._enhanced_live = True  # проактивное аудио; отключается само, если сервер его отклонит
 
         _base_dir = Path(__file__).resolve().parent
         _inline_names = {t["name"] for t in TOOL_DECLARATIONS}
 
-        # File-backed tools: every actions/*.py with a TOOL dict, discovered the
-        # same way plugins are. Reserved names = the inline tools above, so an
-        # action can never shadow one.
+        # Файловые инструменты: все actions/*.py с dict TOOL — обнаруживаются тем
+        # же способом, что и плагины. Зарезервированные имена — встроенные
+        # инструменты выше, поэтому действие не может перекрыть ни одно из них.
         self._action_registry = discover_actions(
             actions_dir=_base_dir / "actions",
             reserved_names=_inline_names,
             logger=lambda msg: print(f"[Actions] {msg}"),
         )
 
-        # Plugins must not collide with either an inline tool or a discovered action.
+        # Плагин не должен коллизировать ни с встроенным инструментом, ни с действием.
         _core_names = _inline_names | self._action_registry.names()
         self._plugin_registry = discover_plugins(
             plugins_dir=_base_dir / "plugins",
@@ -419,33 +421,33 @@ class AnfisaLive:
             logger=lambda msg: (print(f"[Plugins] {msg}"), self.ui.write_log(f"SYS: {msg}")),
         )
         self.ui.get_plugins = self._plugin_registry.list_for_ui
-        self.ui.get_plugin_settings = self._plugin_registry.settings_schemas  # ⚙ settings tab
-        self.ui.request_say = self.plugin_say   # plugins: mid-task speech channel
+        self.ui.get_plugin_settings = self._plugin_registry.settings_schemas  # ⚙ вкладка настроек
+        self.ui.request_say = self.plugin_say   # плагины: канал озвучки посреди задачи
 
-        # ── Wake word ────────────────────────────────────────────────────────
-        # _awake gates the mic (see _listen_audio) and the background speakers.
-        # It is True whenever wake word is OFF, so default behaviour is unchanged.
+        # ── Слово пробуждения ─────────────────────────────────────────────────
+        # _awake закрывает микрофон (см. _listen_audio) и фоновые реплики.
+        # Он True всегда, когда слово пробуждения ВЫКЛ — поведение по умолчанию не меняется.
         self._wake_enabled     = get_wake_word_enabled()
         self._awake            = not self._wake_enabled
         self._wake_detector: WakeWordDetector | None = None
         self._wake_sleep_timeout = WAKE_SLEEP_TIMEOUT
-        # UI control surface for the Wake Word settings section.
+        # Интерфейс управления для секции настроек «Слово пробуждения».
         self.ui.wake_is_ready    = wake_is_ready          # () -> bool
         self.ui.wake_get_state   = self._wake_state       # () -> dict
         self.ui.on_wake_toggle   = self._ui_wake_toggle   # (enable: bool) -> str
-        self.ui.on_wake_manual   = self._ui_wake_manual   # () -> toggle awake/asleep
+        self.ui.on_wake_manual   = self._ui_wake_manual   # () -> переключает бодр/спит
         self.ui.on_wake_install  = self._ui_wake_install  # () -> (ok, msg)
 
-    # ── Wake word: state machine ─────────────────────────────────────────────
+    # ── Слово пробуждения: машина состояний ───────────────────────────────────
 
     def _wake_state(self) -> dict:
-        # A loaded, running detector is definitively ready; otherwise fall back
-        # to the cheap on-disk model-file check (no Model construction).
+        # Загруженный и работающий детектор заведомо готов; иначе полагаемся на
+        # дешёвую проверку файлов модели на диске (без создания Model).
         ready = bool(self._wake_detector and self._wake_detector.ready) or wake_is_ready()
         return {"enabled": self._wake_enabled, "awake": self._awake, "ready": ready}
 
     def _ensure_wake_detector(self) -> bool:
-        """Load the detector once (model loads on first start). Idempotent."""
+        """Загружает детектор один раз (модель читается при первом старте). Идемпотентно."""
         if self._wake_detector is None:
             self._wake_detector = WakeWordDetector(
                 on_detect=self._on_wake_detected,
@@ -456,28 +458,28 @@ class AnfisaLive:
         return True
 
     def _on_wake_detected(self) -> None:
-        """Called from the detector thread when 'Привет Анфиса' is heard."""
-        self.wake(reason="wake word")
+        """Вызывается из потока детектора, когда услышано «Привет Анфиса»."""
+        self.wake(reason="слово пробуждения")
 
-    def wake(self, reason: str = "wake word") -> None:
+    def wake(self, reason: str = "слово пробуждения") -> None:
         if self._awake:
             return
         self._awake = True
-        self._last_user_speech = time.monotonic()   # start the auto-sleep clock now
+        self._last_user_speech = time.monotonic()   # теперь запускаем часы авто-засыпания
         if not self.ui.muted:
             self.ui.set_state("LISTENING")
-        self.ui.write_log(f"SYS: Awake — {reason}.")
+        self.ui.write_log(f"SYS: Бодрствую — {reason}.")
 
-    def sleep(self, reason: str = "timeout") -> None:
+    def sleep(self, reason: str = "таймаут") -> None:
         if not self._awake:
             return
         self._awake = False
         self.set_speaking(False)
         self.ui.set_state("SLEEPING")
-        self.ui.write_log(f"SYS: Sleeping — {reason}. Say 'Привет Анфиса' to wake me.")
+        self.ui.write_log(f"SYS: Засыпаю — {reason}. Скажи «Привет Анфиса», чтобы разбудить меня.")
 
     async def _run_sleep_watch(self) -> None:
-        """Auto-sleep after the configured silence window (wake-word mode only)."""
+        """Авто-засыпание после заданного окна тишины (только режим слова пробуждения)."""
         while True:
             await asyncio.sleep(5)
             if not self._wake_enabled or not self._awake:
@@ -487,48 +489,48 @@ class AnfisaLive:
             if speaking:
                 continue
             if (time.monotonic() - self._last_user_speech) > self._wake_sleep_timeout:
-                self.sleep(reason="no speech for 2 minutes")
+                self.sleep(reason="нет речи две минуты")
 
-    # ── Wake word: UI callbacks (called from the Qt thread) ──────────────────
+    # ── Слово пробуждения: колбэки UI (вызываются из потока Qt) ────────────────
 
     def _ui_wake_toggle(self, enable: bool) -> str:
-        """Enable/disable wake word from the settings UI. Returns a status token:
-        'enabled' | 'disabled' | 'need_download'."""
+        """Включает/выключает слово пробуждения из настроек UI. Возвращает статусный
+        токен: 'enabled' | 'disabled' | 'need_download'."""
         if enable:
             if not wake_is_ready():
                 return "need_download"
             self._wake_enabled = True
             save_wake_word_enabled(True)
             self._ensure_wake_detector()
-            self.sleep(reason="wake word enabled")
+            self.sleep(reason="слово пробуждения включено")
             return "enabled"
         else:
             self._wake_enabled = False
             save_wake_word_enabled(False)
-            self.wake(reason="wake word disabled")
+            self.wake(reason="слово пробуждения отключено")
             return "disabled"
 
     def _ui_wake_manual(self) -> None:
-        """Manual sleep/wake button in the UI."""
+        """Кнопка ручного засыпания/пробуждения в UI."""
         if not self._wake_enabled:
             return
         if self._awake:
-            self.sleep(reason="you tapped sleep")
+            self.sleep(reason="ты нажал «усыпить»")
         else:
-            self.wake(reason="you tapped wake")
+            self.wake(reason="ты нажал «разбудить»")
 
     def _ui_wake_install(self) -> tuple[bool, str]:
-        """Download openwakeword + the model (runs in a UI worker thread)."""
+        """Скачивает openwakeword + модель (выполняется в рабочем потоке UI)."""
         return wake_install(logger=lambda m: self.ui.write_log(f"SYS: {m}"))
 
     def plugin_say(self, instruction: str) -> None:
         """
-        Thread-safe speech channel for plugins: lets a plugin ask Anfisa to
-        say something short WHILE its run() is still executing (plugins block
-        their executor thread, so they can't speak through the tool response
-        until they finish). The instruction is injected into the Live session
-        exactly like a proactive check-in; Gemini phrases it naturally in the
-        user's language. Silently a no-op when no session is connected.
+        Потокобезопасный канал озвучки для плагинов: позволяет плагину попросить
+        Анфису сказать что-то короткое, ПОКА его run() ещё выполняется (плагины
+        блокируют свой поток исполнителя, так что через ответ инструмента они
+        могут говорить, только закончив). Указание попадает в сессию Live ровно
+        как проактивная реплика; Gemini формулирует его естественно на языке
+        пользователя. Безмолвный no-op, когда сессия не подключена.
         """
         loop = getattr(self, "_loop", None)
         if not loop or not self.session:
@@ -549,13 +551,13 @@ class AnfisaLive:
             print(f"[PluginSay] {e}")
 
     def request_reconnect(self, keep_context: bool = True, reason: str = ""):
-        """Thread-safe: ask the run loop to tear down and rebuild the Live
-        session. Called from the Qt thread. No-op until the async loop and
-        reconnect event exist.
+        """Потокобезопасно: просит цикл запуска разобрать и пересобрать сессию Live.
+        Вызывается из потока Qt. No-op, пока асинхронный цикл и событие
+        переподключения не существуют.
 
-        `keep_context=False` drops the resumption handle so the new session
-        starts empty — only for changes the server cannot apply to a resumed
-        session."""
+        `keep_context=False` отбрасывает handle возобновления, и новая сессия
+        начинается пустой — только для изменений, которые сервер не может применить
+        к возобновлённой сессии."""
         loop = getattr(self, "_loop", None)
         ev   = self._reconnect_event
         self._reconnect_keep   = keep_context
@@ -564,43 +566,43 @@ class AnfisaLive:
             loop.call_soon_threadsafe(ev.set)
 
     def _on_voice_change(self):
-        """Voice picker applied.
+        """Выбранный голос применён.
 
-        The voice is baked into the session at connect time, so a rebuild is
-        required. It is rebuilt WITHOUT the resumption handle on purpose:
-        resuming restores the server's own session state, and the safe reading
-        is that it restores the voice with it — which would make the picker
-        appear to do nothing. Losing context here is acceptable because changing
-        voice is a deliberate, rare act; losing it on a dropped packet was not."""
-        self.request_reconnect(keep_context=False, reason="new voice")
+        Голос «запекается» в сессию в момент подключения, поэтому нужна пересборка.
+        Она собирается БЕЗ handle возобновления намеренно: возобновление восстанавливает
+        собственное состояние сессии на сервере, и разумное предположение — что вместе с
+        ним восстанавливается и голос, что заставило бы выбор голоса выглядеть пустым
+        действием. Потерять контекст здесь приемлемо, потому что смена голоса —
+        обдуманный и редкий шаг; потерять его из-за потерянного пакета было нельзя."""
+        self.request_reconnect(keep_context=False, reason="новый голос")
 
     def _on_audio_device_change(self):
-        """Microphone or speaker changed. Both streams are opened inside the
-        session TaskGroup, so they can only be re-opened by rebuilding it —
-        but the conversation is kept, which is the whole reason resumption
-        landed before this feature did."""
-        self.request_reconnect(keep_context=True, reason="audio device")
+        """Сменились микрофон или динамики. Оба потока открываются внутри TaskGroup
+        сессии, поэтому пересобрать их можно только вместе с ней — но разговор
+        сохраняется, и именно ради этого возобновление появилось раньше, чем эта
+        возможность."""
+        self.request_reconnect(keep_context=True, reason="аудио-устройство")
 
     async def _watch_reconnect(self):
-        """Session-scoped task: when a voluntary reconnect is requested, raise a
-        signal that unwinds the TaskGroup so the run loop rebuilds the session."""
+        """Задача уровня сессии: когда запрошено добровольное переподключение, бросает
+        сигнал, который раскручивает TaskGroup, чтобы цикл запуска пересобрал сессию."""
         assert self._reconnect_event is not None
         await self._reconnect_event.wait()
         self._reconnect_event.clear()
         keep   = self._reconnect_keep
-        reason = getattr(self, "_reconnect_reason", "") or "settings"
+        reason = getattr(self, "_reconnect_reason", "") or "настройки"
         self.ui.write_log(
-            f"SYS: Applying {reason} — reconnecting"
-            + ("..." if keep else " (starting a fresh conversation)...")
+            f"SYS: Применяю {reason} — переподключение"
+            + ("..." if keep else " (начинаю новый разговор)...")
         )
         raise _ReconnectSignal(keep_context=keep)
 
     def _make_remote_key(self):
-        """Called from Qt main thread when user presses Remote Control."""
+        """Вызывается из главного потока Qt, когда пользователь жмёт Remote Control."""
         if self._dashboard is None:
             self.ui.write_log(
-                "SYS: Dashboard unavailable. "
-                "Run: pip install fastapi \"uvicorn[standard]\" cryptography"
+                "SYS: Дашборд недоступен. "
+                "Выполни: pip install fastapi \"uvicorn[standard]\" cryptography"
             )
             return None
         key    = self._dashboard.new_key()
@@ -611,11 +613,11 @@ class AnfisaLive:
     def _on_text_command(self, text: str):
         if not self._loop or not self.session:
             return
-        # Respect wake-word sleep: a typed command must not be answered while
-        # asleep either (the sleep gate is not just for the mic). Wake first with
-        # "Привет Анфиса" or the WAKE NOW button.
+        # Уважаем сон от слова пробуждения: набранная команда не должна получать ответ,
+        # пока ассистент спит (ворота сна не только для микрофона). Сначала разбуди
+        # словом «Привет Анфиса» или кнопкой WAKE NOW.
         if self._wake_enabled and not self._awake:
-            self.ui.write_log("SYS: I'm asleep — say 'Привет Анфиса' or tap WAKE NOW first.")
+            self.ui.write_log("SYS: Я сплю — сначала скажи «Привет Анфиса» или нажми WAKE NOW.")
             return
         asyncio.run_coroutine_threadsafe(
             self.session.send_client_content(
@@ -634,7 +636,7 @@ class AnfisaLive:
             self.ui.set_state("LISTENING")
 
     def interrupt(self) -> None:
-        """Stop Anfisa mid-speech: drain queued audio and open mic immediately."""
+        """Останавливает Анфису на середине фразы: сливает очередь аудио и сразу открывает микрофон."""
         self._interrupted = True
         q = self.audio_in_queue
         if q:
@@ -646,11 +648,11 @@ class AnfisaLive:
                 except Exception:
                     break
             if drained:
-                print(f"[Anfisa] ✋ Interrupted — {drained} audio chunks discarded")
+                print(f"[Anfisa] ✋ Прерывание — {drained} аудио-чанков отброшено")
         self.set_speaking(False)
         if self._turn_done_event:
             self._turn_done_event.clear()
-        self.ui.write_log("SYS: Interrupted — listening...")
+        self.ui.write_log("SYS: Прервано — слушаю...")
 
     def speak(self, text: str):
         if not self._loop or not self.session:
@@ -666,12 +668,12 @@ class AnfisaLive:
     def speak_error(self, tool_name: str, error: str):
         short = str(error)[:120]
         self.ui.write_log(f"ERR: {tool_name} — {short}")
-        self.speak(f"Sir, {tool_name} encountered an error. {short}")
+        self.speak(f"Сэр, инструмент {tool_name} выдал ошибку. {short}")
 
     def _build_config(self) -> types.LiveConnectConfig:
         from datetime import datetime
 
-        # Load customization from config
+        # Загружаем кастомизацию из конфига
         try:
             _cfg = json.loads(open(API_CONFIG_PATH, encoding="utf-8").read())
             self._asst_name = (_cfg.get("assistant_name") or "Anfisa").strip()
@@ -688,23 +690,23 @@ class AnfisaLive:
         time_str = now.strftime("%A, %B %d, %Y — %I:%M %p")
         time_ctx = (
             f"[CURRENT DATE & TIME]\n"
-            f"Right now it is: {time_str}\n"
-            f"Use this to calculate exact times for reminders.\n\n"
+            f"Сейчас: {time_str}\n"
+            f"Используй это, чтобы считать точное время для напоминаний.\n\n"
         )
 
-        # Identity injection — overrides any hardcoded name in prompt.txt
-        _addr = (f"ADDRESS: Always call the user '{_user_name}'."
+        # Инъекция личности — перекрывает любое имя, зашитое в prompt.txt
+        _addr = (f"ADDRESS: Всегда называй пользователя '{_user_name}'."
                  if _user_name
-                 else "ADDRESS: Address the user with the ordinary respectful form "
-                      "for a superior in the language you are currently speaking — "
-                      "\"sir\" in English, its everyday equivalent in any other "
-                      "language. Never an archaic or aristocratic form, and never "
-                      "the form from a different language than the one you are "
-                      "speaking in this sentence.")
+                 else "ADDRESS: Обращайся к пользователю обычной вежливой формой "
+                      "для старшего по статусу на том языке, на котором говоришь сейчас — "
+                      "\"сэр\" в английском, её повседневным эквивалентом в любом "
+                      "другом. Никаких архаичных или аристократических форм и никогда "
+                      "форма из языка, отличного от того, на котором ты говоришь "
+                      "этим предложением.")
         identity_ctx = (
             f"[IDENTITY]\n"
-            f"Your name is {self._asst_name}. "
-            f"Always refer to yourself as {self._asst_name}.\n"
+            f"Тебя зовут {self._asst_name}. "
+            f"Всегда называй себя {self._asst_name}.\n"
             f"{_addr}\n\n"
         )
 
@@ -723,14 +725,14 @@ class AnfisaLive:
                 + self._action_registry.get_tool_declarations()
                 + self._plugin_registry.get_tool_declarations()
             )}],
-            # Hand back the handle captured from the last session_resumption
-            # update. `handle=None` is exactly the old behaviour (ask for
-            # handles, start fresh), so the first connect of a run is unchanged.
+            # Возвращаем handle, перехваченный из последнего обновления session_resumption.
+            # `handle=None` — это ровно старое поведение (запрашивать handle, начинать
+            # с чистого листа), поэтому первое подключение запуска не меняется.
             session_resumption=types.SessionResumptionConfig(
                 handle=self._resume_handle
             ),
-            # Sliding-window compression: session never dies from a full context
-            # window — Anfisa can stay in one conversation for hours
+            # Сжатие скользящим окном: сессия не умирает от переполненного контекста —
+            # Анфиса может вести один разговор часами
             context_window_compression=types.ContextWindowCompressionConfig(
                 sliding_window=types.SlidingWindow(),
             ),
@@ -743,11 +745,11 @@ class AnfisaLive:
             ),
         )
         if self._enhanced_live:
-            # Proactive audio: Anfisa stays silent when speech isn't addressed
-            # to it (background chatter, talking to someone else in the room).
-            # (Affective dialog was dropped: gemini-3.1-flash-live does not
-            #  support it, and it never reliably detected tone in practice.
-            #  To restore it on a 2.5 native-audio model, add back:
+            # Проактивное аудио: Анфиса молчит, когда речь не обращена к ней
+            # (болтовня на фоне, разговор с кем-то другим в комнате).
+            # (Affective dialog убран: gemini-3.1-flash-live его не
+            #  поддерживает, и на практике тон он надёжно не ловил.
+            #  Чтобы вернуть на модели 2.5 с нативным аудио, добавь обратно:
             #  cfg["enable_affective_dialog"] = True )
             cfg["proactivity"] = types.ProactivityConfig(proactive_audio=True)
         return types.LiveConnectConfig(**cfg)
@@ -774,38 +776,37 @@ class AnfisaLive:
             )
 
         loop   = asyncio.get_event_loop()
-        result = "Done."
+        result = "Готово."
 
         try:
             if name == "recall_memory":
-                # Local file search: no network, no second model. Kept out of
-                # the executor deliberately — it is a dictionary scan over a few
-                # hundred short strings, and a thread hop would cost more than
-                # the work itself.
+                # Локальный поиск по файлу: ни сети, ни второй модели. Нарочно вне
+                # исполнителя — это обход словаря из нескольких сотен коротких строк,
+                # и прыжок в поток стоит дороже самой работы.
                 result = search_memory(args.get("query", ""), limit=8)
 
             elif name == "undo":
                 if str(args.get("action", "")).lower().strip() == "list":
                     items = undo_stack.history()
-                    result = ("Things I can undo, most recent first:\n"
+                    result = ("Что я могу отменить, начиная с последнего:\n"
                               + "\n".join(f"{i+1}. {t}" for i, t in enumerate(items))
-                              ) if items else "I have not changed anything I can undo yet."
+                              ) if items else "Я пока ничего не менял, что можно было бы отменить."
                 else:
                     result = await loop.run_in_executor(None, undo_stack.undo_last)
 
             elif name == "screen_process":
                 import time as _t_mod
                 _now = _t_mod.monotonic()
-                _cooldown = 4.0  # seconds — covers echo window after speaking ends
+                _cooldown = 4.0  # секунд — перекрывает эхо после окончания речи
                 if self._vision_busy or (_now - self._vision_last_time) < _cooldown:
                     _wait = max(0, _cooldown - (_now - self._vision_last_time))
-                    print(f"[Vision] ⏳ Cooldown active ({_wait:.1f}s remaining) — ignoring duplicate call")
-                    result = "Vision is still processing the previous request. I will not call this again."
+                    print(f"[Vision] ⏳ Пауза активна (осталось {_wait:.1f} с) — повторный вызов игнорируется")
+                    result = "Vision ещё обрабатывает предыдущий запрос. Я не буду вызывать это снова."
                 else:
                     self._vision_busy      = True
                     self._vision_last_time = _now
                     angle     = args.get("angle", "screen").lower()
-                    user_text = args.get("text", "What do you see?")
+                    user_text = args.get("text", "Что ты видишь?")
                     if angle == "camera":
                         img_b, mime_t = await loop.run_in_executor(None, _capture_camera)
                         self.ui.start_camera_stream()
@@ -818,15 +819,15 @@ class AnfisaLive:
                         _stall = "screen"
                     self._pending_vision = (img_b, mime_t, user_text, angle)
                     result = (
-                        f"[VISION_ACTIVE] {_stall.capitalize()} captured. "
-                        f"Immediately say ONE short natural sentence in the user's own language, "
-                        f"telling them you are looking at their {_stall} right now. "
-                        f"Do NOT describe or guess content — the actual image arrives in the NEXT message."
+                        f"[VISION_ACTIVE] Захват выполнен, режим — {_stall}. "
+                        f"Сразу скажи ОДНО короткое естественное предложение на языке пользователя, "
+                        f"сообщив, что ты смотришь на захваченное прямо сейчас. "
+                        f"НЕ описывай и не угадывай содержимое — само изображение придёт в СЛЕДУЮЩЕМ сообщении."
                     )
 
             elif name == "close_camera":
                 self.ui.stop_camera_stream()
-                result = "Camera closed."
+                result = "Камера закрыта."
 
             elif name == "system_status":
                 r = await loop.run_in_executor(None, get_system_status)
@@ -841,18 +842,18 @@ class AnfisaLive:
                     result = await asyncio.to_thread(remove_monitor, topic)
                 elif action == "list":
                     topics = await asyncio.to_thread(list_monitors)
-                    result = ("Monitoring: " + ", ".join(topics)) if topics else "No topics are being monitored."
+                    result = ("Наблюдение: " + ", ".join(topics)) if topics else "Тем наблюдения нет."
                 else:
-                    result = "Specify action (add/remove/list) and a topic."
+                    result = "Укажи действие (add/remove/list) и тему."
 
             elif name == "shutdown_Anfisa":
-                self.ui.write_log("SYS: Shutdown requested.")
+                self.ui.write_log("SYS: Запрошено завершение работы.")
                 async def _do_shutdown():
                     await self._save_session_summary()
                     if self.session:
                         try:
                             await self.session.send_client_content(
-                                turns={"role": "user", "parts": [{"text": "Say a brief natural goodbye to the user."}]},
+                                turns={"role": "user", "parts": [{"text": "Скажи пользователю короткое естественное прощание."}]},
                                 turn_complete=True,
                             )
                         except Exception:
@@ -863,14 +864,14 @@ class AnfisaLive:
                 asyncio.create_task(_do_shutdown())
 
             elif self._action_registry.has(name):
-                # file_processor: fall back to the currently-uploaded file when none is given
+                # file_processor: если файл не указан, берём тот, что загружен сейчас
                 if name == "file_processor" and not args.get("file_path") and self.ui.current_file:
                     args["file_path"] = self.ui.current_file
                 _ctx = {"player": self.ui, "speak": self.speak,
                         "response": None, "session_memory": None}
                 r = await loop.run_in_executor(None, lambda: self._action_registry.run(name, args, _ctx))
-                result = r or "Done."
-                # web_search: mirror results to the on-screen content panel
+                result = r or "Готово."
+                # web_search: дублируем результаты на экранный контент-панель
                 if (name == "web_search" and r
                         and not r.startswith("No results")
                         and not r.startswith("Search failed")):
@@ -885,12 +886,12 @@ class AnfisaLive:
                         None,
                         lambda: self._plugin_registry.run(name, args, player=self.ui, session_memory=None)
                     )
-                    result = r or "Done."
+                    result = r or "Готово."
                 else:
-                    result = f"Unknown tool: {name}"
+                    result = f"Неизвестный инструмент: {name}"
 
         except Exception as e:
-            result = f"Tool '{name}' failed: {e}"
+            result = f"Инструмент '{name}' завершился с ошибкой: {e}"
             traceback.print_exc()
             self.speak_error(name, e)
 
@@ -906,11 +907,11 @@ class AnfisaLive:
     async def _send_realtime(self):
         while True:
             msg = await self.out_queue.get()
-            # Gemini 3.x Live rejects the old realtime_input.media_chunks field
-            # (what `media=...` maps to) and closes the socket with a 1007. Send
-            # mic / phone PCM through the new `audio` field instead. Queue items
-            # are {"data": <bytes>, "mime_type": <str>} from _listen_audio and
-            # the phone relay.
+            # Gemini 3.x Live отвергает прежнее поле realtime_input.media_chunks
+            # (то, куда попадает `media=...`) и закрывает сокет кодом 1007. Поэтому
+            # PCM с микрофона и с телефона шлём через новое поле `audio`. Элементы
+            # очереди — это {"data": <bytes>, "mime_type": <str>} из _listen_audio
+            # и из телефонного ретранслятора.
             await self.session.send_realtime_input(
                 audio=types.Blob(
                     data=msg["data"],
@@ -919,17 +920,18 @@ class AnfisaLive:
             )
 
     async def _listen_audio(self):
-        print("[Anfisa] 🎤 Mic started")
+        print("[Anfisa] 🎤 Микрофон запущен")
         loop = asyncio.get_event_loop()
 
         def callback(indata, frames, time_info, status):
-            # ── Wake-word gate ───────────────────────────────────────────────
-            # While asleep, the mic audio NEVER goes to Gemini (nothing is
-            # streamed, so Anfisa can't respond to speech not addressed to it and
-            # nothing leaves the machine). Frames are instead handed to the local
-            # detector, which runs its model in ITS OWN thread — the cost here is
-            # only a queue push, so the audio path is never slowed. When wake word
-            # is off (default) or we're awake, this is a single boolean check.
+            # ── Ворота слова пробуждения ─────────────────────────────────────
+            # Пока я сплю, звук с микрофона НИКОГДА не уходит в Gemini (ничего не
+            # транслируется, поэтому Anfisa не может отреагировать на речь, которая
+            # к ней не обращена, и наружу с машины ничего не уходит). Вместо этого
+            # кадры передаются локальному детектору, который гоняет свою модель в
+            # СВОЁМ потоке — здесь цена только толчок в очередь, так что аудиотракт
+            # никогда не тормозится. Когда слово пробуждения выключено (по
+            # умолчанию) или я не сплю — это одна проверка булева флага.
             if self._wake_enabled and not self._awake:
                 det = self._wake_detector
                 if det is not None:
@@ -943,9 +945,10 @@ class AnfisaLive:
                     self.out_queue.put_nowait,
                     {"data": data, "mime_type": "audio/pcm"}
                 )
-                # Feed the live mic level to the HUD so the waveform reacts to
-                # the user's actual voice while listening. Purely cosmetic — any
-                # failure here must never disturb the mic.
+                # Живой уровень с микрофона уходит на HUD, чтобы волновая форма
+                # реагировала на настоящий голос пользователя во время
+                # прослушивания. Чисто косметика — любая ошибка здесь ни в коем
+                # случае не должна мешать микрофону.
                 try:
                     self.ui.set_audio_level(_pcm_level(indata))
                 except Exception:
@@ -962,66 +965,68 @@ class AnfisaLive:
                     callback=callback,
                 )
 
-            # Which microphone. resolve() returns None for "system default" and
-            # for a saved device that is no longer present — so a headset
-            # unplugged since the last run falls back to the built-in mic
-            # instead of raising on startup and taking the session with it.
+            # Какой микрофон. resolve() возвращает None и для «системного по
+            # умолчанию», и для сохранённого устройства, которого больше нет, —
+            # поэтому гарнитура, отключённая после прошлого запуска, откатится на
+            # встроенный микрофон вместо исключения на старте, которое утащило бы
+            # за собой всю сессию.
             _mic_name = get_input_device()
             _mic_dev  = audio_devices.resolve(_mic_name, "input")
             if _mic_dev is not None:
-                print(f"[Anfisa] 🎤 Input device: {_mic_name}")
+                print(f"[Anfisa] 🎤 Устройство ввода: {_mic_name}")
             try:
                 _mic_stream = _open_mic(_mic_dev)
             except Exception as _e:
-                # A device the picker listed but the driver will not open right
-                # now — exclusive mode, a webcam already in use, a virtual mic
-                # whose source went away. Chosen hardware failing must never
-                # mean the assistant cannot hear at all.
+                # Устройство, которое список показал, но драйвер прямо сейчас
+                # открыть не даёт — эксклюзивный режим, уже занята веб-камера, у
+                # виртуального микрофона исчез источник. Отказ выбранного
+                # железа никогда не должен означать, что ассистент вообще не
+                # слышит.
                 if _mic_dev is None:
                     raise
-                print(f"[Anfisa] ⚠️  Mic '{_mic_name}' failed: {_e} — using default")
+                print(f"[Anfisa] ⚠️  Микрофон '{_mic_name}' не удался: {_e} — беру системный по умолчанию")
                 self.ui.write_log(
-                    f"SYS: Microphone '{_mic_name}' unavailable — using system default."
+                    f"SYS: Микрофон '{_mic_name}' недоступен — использую системный по умолчанию."
                 )
                 _mic_stream = _open_mic(None)
 
             with _mic_stream:
-                print("[Anfisa] 🎤 Mic stream open")
+                print("[Anfisa] 🎤 Поток микрофона открыт")
                 while True:
                     await asyncio.sleep(0.1)
         except Exception as e:
-            print(f"[Anfisa] ❌ Mic: {e}")
+            print(f"[Anfisa] ❌ Микрофон: {e}")
             raise
 
     async def _receive_audio(self):
-        print("[Anfisa] 👂 Recv started")
+        print("[Anfisa] 👂 Приём запущен")
         out_buf, in_buf = [], []
 
         try:
             while True:
                 async for response in self.session.receive():
 
-                    # ── Session resumption ───────────────────────────────────
-                    # The server sends this periodically. `resumable` goes false
-                    # while a turn is mid-flight — replaying a handle from that
-                    # moment is what the flag exists to prevent — so only
-                    # resumable handles are kept. This is three lines and it is
-                    # the entire fix for "every reconnect forgets everything".
+                    # ── Возобновление сессии ─────────────────────────────────
+                    # Сервер присылает это периодически. Флаг `resumable` гаснет,
+                    # пока ход ещё в полёте, — именно повторы хендла из такого
+                    # момента он и предотвращает, — поэтому сохраняем только
+                    # возобновляемые хендлы. Три строки кода — и это целиком вся
+                    # починка от «после каждого переподключения всё забыто».
                     _sru = getattr(response, "session_resumption_update", None)
                     if _sru is not None:
                         if getattr(_sru, "resumable", False) and getattr(_sru, "new_handle", None):
                             if self._resume_handle is None:
-                                print("[Anfisa] 🔗 Session resumption armed")
+                                print("[Anfisa] 🔗 Возобновление сессии подготовлено")
                             self._resume_handle = _sru.new_handle
 
                     if response.data:
                         if self._interrupted:
-                            pass  # discard: interrupted
+                            pass  # отбрасываем: прерывание
                         else:
                             if self._turn_done_event and self._turn_done_event.is_set():
                                 self._turn_done_event.clear()
-                            # Split into ~50 ms chunks so interrupt() stops audio within 50 ms
-                            # (24000 Hz × 2 bytes/sample × 0.05 s = 2400 bytes per slice)
+                            # Режем на чанки ~50 мс, чтобы interrupt() останавливал звук за 50 мс
+                            # (24000 Гц × 2 байта/сэмпл × 0.05 с = 2400 байт на срез)
                             _audio_data = response.data
                             _SLICE = 2400
                             for _i in range(0, len(_audio_data), _SLICE):
@@ -1045,8 +1050,8 @@ class AnfisaLive:
                             if self._turn_done_event:
                                 self._turn_done_event.set()
 
-                            # If this turn_complete ends an interrupted response, clear the
-                            # flag and skip all further processing for that turn.
+                            # Если этот turn_complete завершает прерванный ответ,
+                            # сбрасываем флаг и пропускаем всю дальнейшую обработку хода.
                             if self._interrupted:
                                 self._interrupted = False
                                 in_buf  = []
@@ -1077,7 +1082,8 @@ class AnfisaLive:
                                     }))
                             out_buf = []
 
-                            # Vision injection: model finished tool-response turn → now send the image
+                            # Вброс изображения: модель завершила ход с ответом
+                            # инструмента → теперь отправляем картинку
                             if self._pending_vision and self.session:
                                 import base64 as _b64
                                 img_b, mime_t, question, angle = self._pending_vision
@@ -1091,16 +1097,16 @@ class AnfisaLive:
                                     ]},
                                     turn_complete=True,
                                 )
-                                # Anfisa next turn_complete behaviour depending on angle
+                                # Дальнейшее поведение Anfisa на следующем turn_complete зависит от ракурса
                                 if self._vision_cam_active:
-                                    # Camera: keep busy until Anfisa finishes speaking the answer
+                                    # Камера: держим занятой, пока Anfisa договаривает ответ
                                     self._vision_cam_active    = False
                                     self._vision_close_pending = True
                                 else:
-                                    # Screen-only: no camera to close; release busy flag now
+                                    # Только экран: закрывать камеру не нужно, снимаем флаг занятости сейчас
                                     self._vision_busy = False
                             elif self._vision_close_pending:
-                                # This turn_complete IS the vision answer — close camera + release busy flag
+                                # Этот turn_complete И ЕСТЬ ответ по зрению — закрываем камеру и снимаем флаг занятости
                                 self._vision_close_pending = False
                                 self._vision_busy = False
                                 async def _cam_close():
@@ -1118,17 +1124,17 @@ class AnfisaLive:
                             function_responses=fn_responses
                         )
         except Exception as e:
-            print(f"[Anfisa] ❌ Recv: {e}")
+            print(f"[Anfisa] ❌ Приём: {e}")
             traceback.print_exc()
             raise
 
     async def _play_audio(self):
-        print("[Anfisa] 🔊 Play started")
+        print("[Anfisa] 🔊 Воспроизведение запущено")
 
         _spk_name = get_output_device()
         _spk_dev  = audio_devices.resolve(_spk_name, "output")
         if _spk_dev is not None:
-            print(f"[Anfisa] 🔊 Output device: {_spk_name}")
+            print(f"[Anfisa] 🔊 Устройство вывода: {_spk_name}")
 
         def _open_spk(dev):
             st = sd.RawOutputStream(
@@ -1144,13 +1150,14 @@ class AnfisaLive:
         try:
             stream = _open_spk(_spk_dev)
         except Exception as _e:
-            # A chosen output that the host API accepts by name but refuses to
-            # open (exclusive mode, wrong sample rate, device asleep) must not
-            # cost the user their voice. Fall back to the default and say so.
+            # Вывод, который хост-API принимает по имени, но отказывается
+            # открыть (эксклюзивный режим, неподходящая частота дискретизации,
+            # уснувшее устройство), не должен оставлять пользователя без голоса.
+            # Откатываемся на устройство по умолчанию и говорим об этом.
             if _spk_dev is None:
                 raise
-            print(f"[Anfisa] ⚠️  Output device '{_spk_name}' failed: {_e} — using default")
-            self.ui.write_log(f"SYS: Speaker '{_spk_name}' unavailable — using system default.")
+            print(f"[Anfisa] ⚠️  Устройство вывода '{_spk_name}' не удалось открыть: {_e} — беру системное по умолчанию")
+            self.ui.write_log(f"SYS: Устройство вывода '{_spk_name}' недоступно — использую системное по умолчанию.")
             stream = _open_spk(None)
 
         try:

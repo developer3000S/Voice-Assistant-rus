@@ -5,7 +5,7 @@ from pathlib import Path
 _CONFIG_PATH = Path(__file__).parent / "api_keys.json"
 
 def _platform_os() -> str:
-    """Auto-detect OS when config file is absent."""
+    """Автоопределение ОС, когда файл настроек отсутствует."""
     return {"Windows": "windows", "Darwin": "mac", "Linux": "linux"}.get(
         platform.system(), "linux"
     )
@@ -18,7 +18,7 @@ def get_config() -> dict:
         return {}
 
 def get_os() -> str:
-    """Returns: 'windows' | 'mac' | 'linux'"""
+    """Возвращает: 'windows' | 'mac' | 'linux'"""
     return get_config().get("os_system", _platform_os()).lower()
 
 def is_windows() -> bool: return get_os() == "windows"
