@@ -14,6 +14,10 @@ COMMIT_MSG="$1"
 
 echo "--- Начинаю обновление GitHub ---"
 
+# 0. Сжимаем .git
+git reflog expire --expire=now --all
+git gc --prune=now
+
 # 1. Добавление всех изменений
 echo "[1/3] Добавление файлов..."
 git add .
